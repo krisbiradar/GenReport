@@ -1,6 +1,4 @@
-@Grepo.QueryGenerator_HostAddress = http://localhost:5212
+@GenReport.QueryGenerator_HostAddress = http://localhost:5212
 
-GET {{Grepo.QueryGenerator_HostAddress}}/weatherforecast/
+GET {{GenReport.QueryGenerator_HostAddress}}/weatherforecast/
 Accept: application/json
-
-###

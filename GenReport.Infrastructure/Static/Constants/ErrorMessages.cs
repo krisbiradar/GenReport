@@ -28,5 +28,8 @@
         public static string USER_ALREADY_EXISTS => "USER_ALREADY_EXISTS";
         public static string MIDDLEWARE_ERROR => "MIDDLEWARE_ERROR";
         public static string UNAUTHORIZED => "UNAUTHORIZED ACCESS USER NOT LOGGED IN!!";
+        public static string INVALID_OTP => "INVALID_OTP";
+        public static string OTP_EXPIRED => "OTP_EXPIRED";
+        public static string PASSWORD_MISMATCH => "PASSWORD_MISMATCH";
     }
 }

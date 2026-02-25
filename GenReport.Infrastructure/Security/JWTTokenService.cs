@@ -38,7 +38,7 @@
         /// <returns>The <see cref="string"/></returns>
         public string GenrateAccessToken(User user, string jwtSecret, int expireIn)
         {
-            var claims = new List<Claim>() { new(ClaimTypes.NameIdentifier, user.Id.ToString()), new(ClaimTypes.Name, string.Format("{0} {1}", user.FirstName, user.LastName)) };
+            var claims = new List<Claim>() { new(ClaimTypes.NameIdentifier, user.Id.ToString()), new(ClaimTypes.Name, string.Format("{0} {1}", user.FirstName, user.LastName)), new(ClaimTypes.Role, user.RoleId.ToString()), new(ClaimTypes.Email, user.Email) };
             var jwtToken = new JwtSecurityToken(
                 claims: claims,
                 notBefore: DateTime.UtcNow,

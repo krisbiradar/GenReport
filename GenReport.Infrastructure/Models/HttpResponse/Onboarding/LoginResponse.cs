@@ -18,5 +18,29 @@
         /// </summary>
         [JsonPropertyName("refreshtoken")]
         public required string RefreshToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Role
+        /// </summary>
+        [JsonPropertyName("role")]
+        public string Role { get; set; } = "user";
+
+        /// <summary>
+        /// Gets or sets the Email
+        /// </summary>
+        [JsonPropertyName("email")]
+        public string Email { get; set; } = "";
+
+        /// <summary>
+        /// Gets or sets the FirstName
+        /// </summary>
+        [JsonPropertyName("firstName")]
+        public string FirstName { get; set; } = "";
+
+        /// <summary>
+        /// Gets or sets the LastName
+        /// </summary>
+        [JsonPropertyName("lastName")]
+        public string LastName { get; set; } = "";
     }
 }

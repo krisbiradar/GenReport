@@ -83,13 +83,51 @@ namespace GenReport.Domain.Entities.Onboarding
         public bool IsDeleted { get; set; } = false;
 
         [Column("role_id")]
-        public int RoleId { get; set; } 
+        public int RoleId { get; set; }
+
+        [Column("otp_code")]
+        public string? OtpCode { get; private set; }
+
+        [Column("otp_expiry")]
+        public DateTime? OtpExpiry { get; private set; }
 
         #endregion
-        //TODO: Raise doamin event
+
+        /// <summary>
+        /// Generates a 6-digit OTP with 10-minute expiry
+        /// </summary>
+        public string SetOtp()
+        {
+            var rng = new Random();
+            OtpCode = rng.Next(100000, 999999).ToString();
+            OtpExpiry = DateTime.UtcNow.AddMinutes(10);
+            return OtpCode;
+        }
+
+        /// <summary>
+        /// Validates the OTP code and checks expiry
+        /// </summary>
+        public bool VerifyOtp(string code)
+        {
+            if (string.IsNullOrEmpty(OtpCode) || OtpExpiry == null)
+                return false;
+            if (DateTime.UtcNow > OtpExpiry)
+                return false;
+            return OtpCode == code;
+        }
+
+        /// <summary>
+        /// Clears OTP after successful reset
+        /// </summary>
+        public void ClearOtp()
+        {
+            OtpCode = null;
+            OtpExpiry = null;
+        }
+
         public void ForgotPassword()
         {
-            DomainEvents.RaiseEvent(new ForgotPasswordEvent { Id = Id });   
+            DomainEvents.RaiseEvent(new ForgotPasswordEvent { Id = Id });
         }
     }
 }

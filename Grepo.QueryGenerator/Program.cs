@@ -106,7 +106,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Grepo Query builder",
+        Title = "GenReport Query Builder",
         Version = "v1"
     });
     // Add JWT Authentication to Swagger

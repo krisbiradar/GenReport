@@ -1,4 +1,4 @@
-﻿namespace Grepo.DB.Connections
+﻿namespace GenReport.DB.Connections
 {
     
 }
