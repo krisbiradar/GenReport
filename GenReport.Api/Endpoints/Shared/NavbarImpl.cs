@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GenReport.Endpoints.Shared
 {
-    public class NavbarImpl(ILogger logger, CurrentUserService currentUserService, ApplicationDbContext applicationDbContext) : EndpointWithoutRequest<HttpResponse<List<NavabarImplResponse>>>
+    public class NavbarImpl(ILogger<NavbarImpl> logger, CurrentUserService currentUserService, ApplicationDbContext applicationDbContext) : EndpointWithoutRequest<HttpResponse<List<NavabarImplResponse>>>
     {
-        private readonly ILogger _logger = logger;
+        private readonly ILogger<NavbarImpl> _logger = logger;
         private readonly CurrentUserService _currentUserService = currentUserService;
         private readonly ApplicationDbContext _applicationDbContext = applicationDbContext;
 
