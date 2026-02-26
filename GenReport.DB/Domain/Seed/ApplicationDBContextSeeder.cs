@@ -13,13 +13,13 @@
     /// </summary>
     /// <seealso cref="GenReport.Domain.Interfaces.IApplicationSeeder" />
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-    public partial class ApplicationDBContextSeeder(ApplicationDbContext applicationDbContext) : IApplicationSeeder
+    public partial class ApplicationDBContextSeeder(ApplicationDbContext applicationDbContext, ILogger logger) : IApplicationSeeder
     {
         /// <summary>
         /// Defines the applicationDbContext
         /// </summary>
         private readonly ApplicationDbContext applicationDbContext = applicationDbContext;
-        private readonly ILogger logger;
+        private readonly ILogger logger = logger;
 
         /// <summary>
         /// The Seed

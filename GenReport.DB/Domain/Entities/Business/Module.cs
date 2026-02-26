@@ -16,14 +16,14 @@ namespace GenReport.DB.Domain.Entities.Business
         /// </summary>
         [Column("name")] // Column name mapping
         [Required]  // Enforces non-null value
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         /// <summary>
         /// A description of the module's functionality.
         /// </summary>
         [Column("description")] // Column name mapping
         [Required]  // Enforces non-null value
-        public string Description { get; set; }
+        public required string Description { get; set; }
 
         /// <summary>
         /// The CSS class used to display an icon for the module. (Optional, defaults to "Default Icon Class")

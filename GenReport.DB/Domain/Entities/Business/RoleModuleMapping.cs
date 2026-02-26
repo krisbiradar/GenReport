@@ -30,7 +30,7 @@ namespace GenReport.DB.Domain.Entities.Business
         /// <summary>
         /// The associated Module entity. (This might need to be a reference or a value object depending on your domain)
         /// </summary>
-        public Module Module { get; set; }
+        public Module? Module { get; set; }
 
         /// <summary>
         /// Flag indicating if the mapping was created (consider using a DateTime instead).
