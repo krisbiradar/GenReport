@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,7 +18,7 @@ namespace GenReport.Infrastructure.Models.HttpResponse.Dashboard
         public required string Name { get; set; }
         public required string RawQuery { get; set; }
         public int NoOfRows { get; set; }
-        public required string StorageURL { get; set; }
+        public required string StorageUrl { get; set; }
         public DateTime CreatedOn { get; set; }
     }
 }

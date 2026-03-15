@@ -54,10 +54,16 @@ builder.Services.AddScoped<IApplicationSeeder, ApplicationDBContextSeeder>();
 builder.Services.AddSingleton<IJWTTokenService, JWTTokenService>();
 
 // add cors
-builder.Services.AddCors((options) => options.AddPolicy("allow all", new CorsPolicy
+builder.Services.AddCors(options =>
 {
-    IsOriginAllowed = (origin) => true,
-}));
+    options.AddPolicy("allow all", policy =>
+    {
+        policy.WithOrigins("http://localhost:5174")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
 
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -228,3 +234,4 @@ async Task DeleteDB(WebApplication app)
 
 
 
+public partial class Program { }

@@ -18,11 +18,5 @@
         /// </summary>
         [JsonPropertyName("password")]
         public required string Password { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DeviceType
-        /// </summary>
-        [JsonPropertyName("devicetype")]
-        public required string DeviceType { get; set; }
     }
 }

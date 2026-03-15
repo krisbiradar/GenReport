@@ -1,4 +1,4 @@
-﻿using CoreDdd.Domain;
+using CoreDdd.Domain;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,7 +19,7 @@ namespace GenReport.Domain.Entities.Media
         /// The URL where the media file is stored.
         /// </summary>
         [Column("storage_url")] // Column name mapping
-        public string? StorageURL { get; set; } = storageUrl;
+        public string? StorageUrl { get; set; } = storageUrl;
 
         /// <summary>
         /// The original filename of the media file.
