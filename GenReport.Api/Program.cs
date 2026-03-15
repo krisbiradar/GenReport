@@ -1,5 +1,4 @@
 using FastEndpoints;
-using FluentValidation;
 using GenReport.DB.Domain.Seed;
 using GenReport.Domain.DBContext;
 using GenReport.Domain.Interfaces;
@@ -11,7 +10,6 @@ using GenReport.Middlewares;
 using GenReport.Services.Implementations;
 using GenReport.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
@@ -63,7 +61,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("allow all", policy =>
     {
-        policy.WithOrigins("http://localhost:5174")
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -212,7 +210,14 @@ async Task CreateDB(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+    else
+    {
+        await dbContext.Database.EnsureCreatedAsync();
+    }
 }
 
 /// <summary>

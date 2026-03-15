@@ -64,7 +64,9 @@ namespace GenReport.Tests
             // Assert
             var content = await response.Content.ReadAsStringAsync();
             // FastEndpoints IsEmail extension throws ArgumentException for empty strings which is caught by GlobalExceptionHandler as 500
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.InternalServerError, $"Unexpected status {response.StatusCode}. Content: {content}");
+            // but wrapped in an HttpResponse 200 OK
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), $"Unexpected status {response.StatusCode}. Content: {content}");
+            Assert.IsTrue(content.Contains("MIDDLEWARE_ERROR") || content.Contains("error executing the query"), "Response should contain an error message");
         }
     }
 }

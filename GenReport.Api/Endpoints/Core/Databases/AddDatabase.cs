@@ -13,7 +13,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
     {
         public override void Configure()
         {
-            Post("/databases");
+            Post("/connections");
         }
 
         public override async Task HandleAsync(AddDatabaseRequest req, CancellationToken ct)
@@ -31,11 +31,12 @@ namespace GenReport.Api.Endpoints.Core.Databases
             var newDatabase = new Database
             {
                 Name = req.Name,
-                Type = req.Type,
-                ConnectionString = req.ConnectionString,
-                ServerAddress = req.ServerAddress ?? string.Empty,
+                DatabaseAlias = req.DatabaseAlias,
+                Type = req.DatabaseType,
+                ConnectionString = req.ConnectionString ?? string.Empty,
+                ServerAddress = req.HostName ?? string.Empty,
                 Port = req.Port,
-                Username = req.Username ?? string.Empty,
+                Username = req.UserName ?? string.Empty,
                 Password = req.Password ?? string.Empty,
                 Description = req.Description ?? string.Empty,
                 Status = "Active",

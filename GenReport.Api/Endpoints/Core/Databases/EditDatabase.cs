@@ -12,7 +12,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
     {
         public override void Configure()
         {
-            Put("/databases");
+            Put("/connections");
         }
 
         public override async Task HandleAsync(EditDatabaseRequest req, CancellationToken ct)
@@ -37,11 +37,12 @@ namespace GenReport.Api.Endpoints.Core.Databases
 
             // Update properties if provided
             if (!string.IsNullOrEmpty(req.Name)) existingDb.Name = req.Name;
-            if (!string.IsNullOrEmpty(req.Type)) existingDb.Type = req.Type;
+            if (!string.IsNullOrEmpty(req.DatabaseAlias)) existingDb.DatabaseAlias = req.DatabaseAlias;
+            if (!string.IsNullOrEmpty(req.DatabaseType)) existingDb.Type = req.DatabaseType;
             if (!string.IsNullOrEmpty(req.ConnectionString)) existingDb.ConnectionString = req.ConnectionString;
-            if (req.ServerAddress != null) existingDb.ServerAddress = req.ServerAddress;
+            if (req.HostName != null) existingDb.ServerAddress = req.HostName;
             if (req.Port.HasValue) existingDb.Port = req.Port.Value;
-            if (req.Username != null) existingDb.Username = req.Username;
+            if (req.UserName != null) existingDb.Username = req.UserName;
             if (req.Password != null) existingDb.Password = req.Password; 
             if (req.Provider.HasValue) existingDb.Provider = req.Provider.Value;
             if (req.Description != null) existingDb.Description = req.Description;

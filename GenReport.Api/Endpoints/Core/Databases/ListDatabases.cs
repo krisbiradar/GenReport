@@ -12,7 +12,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
     {
         public override void Configure()
         {
-            Get("/databases");
+            Get("/connections");
         }
 
         public override async Task HandleAsync(CancellationToken ct)
@@ -30,12 +30,14 @@ namespace GenReport.Api.Endpoints.Core.Databases
             var databases = await context.Databases
                 .Select(d => new DatabaseResponse
                 {
-                    Id = d.Id,
+                    Id = d.Id.ToString(),
                     Name = d.Name,
-                    Type = d.Type,
-                    ServerAddress = d.ServerAddress,
+                    DatabaseAlias = d.DatabaseAlias,
+                    DatabaseType = d.Type,
+                    HostName = d.ServerAddress,
                     Port = d.Port,
-                    Username = d.Username,
+                    UserName = d.Username,
+                    DatabaseName = d.Name,
                     Description = d.Description,
                     Status = d.Status,
                     SizeInBytes = d.SizeInBytes,

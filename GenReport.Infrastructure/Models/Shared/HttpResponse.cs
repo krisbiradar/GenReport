@@ -1,4 +1,4 @@
-﻿namespace GenReport.Infrastructure.Models.Shared
+namespace GenReport.Infrastructure.Models.Shared
 {
     using System;
     using System.Collections.Generic;

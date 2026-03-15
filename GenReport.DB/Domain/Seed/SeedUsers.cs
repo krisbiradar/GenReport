@@ -17,7 +17,7 @@ namespace GenReport.DB.Domain.Seed
         {
             var adminUser = new User(
                 password: "AdminPassword123", // User should change this
-                email: "admin@organization.com",
+                    email: "admin@organization.com",
                 firstName: "System",
                 lastName: "Admin",
                 middleName: "Middle",

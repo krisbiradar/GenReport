@@ -26,6 +26,14 @@ namespace GenReport.DB.Domain.Entities.Core
         public required string Name { get; set; }
 
         /// <summary>
+        /// Gets or sets the alias of the database.
+        /// </summary>
+        [Column("database_alias")]
+        [Required]
+        [StringLength(255)]
+        public required string DatabaseAlias { get; set; }
+
+        /// <summary>
         /// Gets or sets the database provider (e.g., MySQL, PostgreSQL).
         /// </summary>
         [Required]

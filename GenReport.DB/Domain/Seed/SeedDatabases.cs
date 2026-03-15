@@ -20,6 +20,7 @@ namespace GenReport.DB.Domain.Seed
                 ConnectionString = "Server=localhost;Database=db;Username=postgres;Password=postgres;",
                 Description = "Support database to run test queries on",
                 Name = "testDB",
+                DatabaseAlias = "testDB_Alias",
                 Password = "postgres",
                 ServerAddress = "127.0.0.1",
                 SizeInBytes = 0,

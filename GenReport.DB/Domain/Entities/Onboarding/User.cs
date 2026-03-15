@@ -12,9 +12,12 @@ namespace GenReport.Domain.Entities.Onboarding
     public class User : Entity<long>, IAggregateRoot, IDeletable
     {
         [NotMapped]
-        private PasswordHasher<User> _passwordHasher;
+        private PasswordHasher<object> _passwordHasher;
 
         #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        [System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute]
+        private User() { }
+
         [System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute]
         public User(string password, string email, string firstName, string lastName, string? middleName, string profileURL)
         {
@@ -23,17 +26,17 @@ namespace GenReport.Domain.Entities.Onboarding
             LastName = lastName;
             MiddleName = middleName;
             ProfileURL = profileURL;
-            Password = passwordHasher.HashPassword(this, password);
+            Password = passwordHasher.HashPassword(null,password);
         }
 
         #region Columns
 
         [NotMapped]
-        private PasswordHasher<User> passwordHasher
+        private PasswordHasher<object> passwordHasher
         {
             get
             {
-                return _passwordHasher ??= new PasswordHasher<User>();
+                return _passwordHasher ??= new PasswordHasher<object>();
             }
         }
 
@@ -42,7 +45,7 @@ namespace GenReport.Domain.Entities.Onboarding
 
         public bool MatchPassword(string unhashedPassword)
         {
-            var result = passwordHasher.VerifyHashedPassword(this, Password, unhashedPassword);
+            var result = passwordHasher.VerifyHashedPassword(null,Password, unhashedPassword);
             return result == PasswordVerificationResult.Success || result == PasswordVerificationResult.SuccessRehashNeeded;
         }
 

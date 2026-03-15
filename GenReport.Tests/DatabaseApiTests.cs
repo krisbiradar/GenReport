@@ -87,18 +87,20 @@ namespace GenReport.Tests
             var request = new AddDatabaseRequest
             {
                 Name = "Test DB",
-                Type = "PostgreSQL",
+                DatabaseAlias = "test-db-alias",
+                DatabaseType = "PostgreSQL",
                 Provider = DbProvider.NpgSql,
                 ConnectionString = "Host=localhost;Database=test",
                 Description = "Integration Test DB",
                 Password = "pwd",
                 Port = 5432,
-                ServerAddress = "127.0.0.1",
-                Username = "user"
+                HostName = "127.0.0.1",
+                UserName = "user",
+                DatabaseName = "test"
             };
 
             // Act
-            var response = await _client.PostAsJsonAsync("/databases", request);
+            var response = await _client.PostAsJsonAsync("/connections", request);
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -117,6 +119,7 @@ namespace GenReport.Tests
                 await context.Databases.AddAsync(new Database
                 {
                     Name = "Sample DB",
+                    DatabaseAlias = "sample-db-alias",
                     Type = "PostgreSQL",
                     Provider = DbProvider.NpgSql,
                     ConnectionString = "conn",
@@ -134,7 +137,7 @@ namespace GenReport.Tests
             }
 
             // Act
-            var response = await _client.GetAsync("/databases");
+            var response = await _client.GetAsync("/connections");
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -155,6 +158,7 @@ namespace GenReport.Tests
                 var db = new Database
                 {
                     Name = "Old Name",
+                    DatabaseAlias = "old-db-alias",
                     Type = "PostgreSQL",
                     Provider = DbProvider.NpgSql,
                     ConnectionString = "old_conn",
@@ -182,7 +186,7 @@ namespace GenReport.Tests
             };
 
             // Act
-            var response = await _client.PutAsJsonAsync("/databases", request);
+            var response = await _client.PutAsJsonAsync("/connections", request);
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));

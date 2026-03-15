@@ -9,22 +9,27 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Databases
         public required string Name { get; set; }
 
         [Required]
-        public required string Type { get; set; }
+        public required string DatabaseAlias { get; set; }
+
+        [Required]
+        public required string DatabaseType { get; set; }
 
         [Required]
         public required DbProvider Provider { get; set; }
 
         [Required]
-        public required string ConnectionString { get; set; }
-
-        public required string ServerAddress { get; set; }
+        public required string HostName { get; set; }
 
         public int Port { get; set; }
 
-        public required string Username { get; set; }
+        public required string UserName { get; set; }
 
-        public required string Password { get; set; }
+        public required string DatabaseName { get; set; }
+        
+        public string? Password { get; set; }
+        
+        public string? ConnectionString { get; set; }
 
-        public required string Description { get; set; }
+        public string? Description { get; set; }
     }
 }
