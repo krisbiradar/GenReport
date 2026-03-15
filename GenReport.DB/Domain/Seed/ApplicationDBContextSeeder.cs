@@ -1,4 +1,4 @@
-﻿namespace GenReport.DB.Domain.Seed
+namespace GenReport.DB.Domain.Seed
 {
     using GenReport.Domain.DBContext;
     using GenReport.Domain.Interfaces;
@@ -29,9 +29,6 @@
         /// </returns>
         public async Task Seed()
         {
-            await SeedOrganizations();
-            await SeedUsers();
-            await SeedMediaFiles();
         }
         /// <summary>
         /// Seeds the mandatory tables.
@@ -39,7 +36,8 @@
         public async Task SeedMandatoryTables()
         {
             await SeedDbProviders();
-            
+            await SeedModules();
+            await SeedUsers();
         }
 
         public async Task RunScripts()

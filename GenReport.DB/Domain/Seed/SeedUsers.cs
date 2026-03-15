@@ -1,4 +1,4 @@
-﻿namespace GenReport.DB.Domain.Seed
+namespace GenReport.DB.Domain.Seed
 {
     using GenReport.Domain.Entities.Onboarding;
     using Microsoft.EntityFrameworkCore;
@@ -15,16 +15,19 @@
         /// <returns>The <see cref="Task"/></returns>
         public async Task SeedUsers()
         {
-            var orgaizationIds = await applicationDbContext.Organizations.Select(x => x.Id).ToListAsync();
-           var users  =  Enumerable.Range(0, 50).Select(x => new User(
-                email: Faker.Internet.Email(),
-                firstName: Faker.Name.First(),
-                lastName: Faker.Name.Last(),
-                middleName: Faker.Name.Middle(),
-                profileURL: Faker.Internet.SecureUrl(),
-                organizationId: orgaizationIds[Faker.RandomNumber.Next(orgaizationIds.Count-1)], password: "Kris#0808")).ToList();
-            applicationDbContext.Users.AddRange(users);
+            var adminUser = new User(
+                password: "AdminPassword123", // User should change this
+                email: "admin@organization.com",
+                firstName: "System",
+                lastName: "Admin",
+                middleName: "Middle",
+                profileURL: "https://example.com/admin.png"
+            );
+            adminUser.RoleId = 1; // Assuming 1 is Admin role
+
+            await applicationDbContext.Users.AddAsync(adminUser);
             await applicationDbContext.SaveChangesAsync();
+
         }
     }
 }

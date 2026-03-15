@@ -1,7 +1,6 @@
-﻿using CoreDdd.Domain;
+using CoreDdd.Domain;
 using CoreDdd.Domain.Events;
 using GenReport.DB.Domain.Events;
-using GenReport.Domain.Entities.Business;
 using GenReport.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
@@ -15,17 +14,16 @@ namespace GenReport.Domain.Entities.Onboarding
         [NotMapped]
         private PasswordHasher<User> _passwordHasher;
 
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         [System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute]
-        public User(string password, string email, string firstName, string lastName, string? middleName, long organizationId, string profileURL)
+        public User(string password, string email, string firstName, string lastName, string? middleName, string profileURL)
         {
-            Password = passwordHasher.HashPassword(this, password);
             Email = email;
             FirstName = firstName;
             LastName = lastName;
             MiddleName = middleName;
-            OrganizationId = organizationId;
             ProfileURL = profileURL;
+            Password = passwordHasher.HashPassword(this, password);
         }
 
         #region Columns
@@ -65,11 +63,6 @@ namespace GenReport.Domain.Entities.Onboarding
 
         [Column("middle_name")]
         public string? MiddleName { get; set; }
-        public Organization Organization { get; set; }
-
-        [Column("organization_id")]
-        public long OrganizationId { get; set; }
-
         [Column("profile_url")]
         public string? ProfileURL { get; set; }
 
@@ -85,45 +78,7 @@ namespace GenReport.Domain.Entities.Onboarding
         [Column("role_id")]
         public int RoleId { get; set; }
 
-        [Column("otp_code")]
-        public string? OtpCode { get; private set; }
-
-        [Column("otp_expiry")]
-        public DateTime? OtpExpiry { get; private set; }
-
         #endregion
-
-        /// <summary>
-        /// Generates a 6-digit OTP with 10-minute expiry
-        /// </summary>
-        public string SetOtp()
-        {
-            var rng = new Random();
-            OtpCode = rng.Next(100000, 999999).ToString();
-            OtpExpiry = DateTime.UtcNow.AddMinutes(10);
-            return OtpCode;
-        }
-
-        /// <summary>
-        /// Validates the OTP code and checks expiry
-        /// </summary>
-        public bool VerifyOtp(string code)
-        {
-            if (string.IsNullOrEmpty(OtpCode) || OtpExpiry == null)
-                return false;
-            if (DateTime.UtcNow > OtpExpiry)
-                return false;
-            return OtpCode == code;
-        }
-
-        /// <summary>
-        /// Clears OTP after successful reset
-        /// </summary>
-        public void ClearOtp()
-        {
-            OtpCode = null;
-            OtpExpiry = null;
-        }
 
         public void ForgotPassword()
         {

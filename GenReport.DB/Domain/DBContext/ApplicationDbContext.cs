@@ -1,8 +1,7 @@
-﻿
+
 
 using GenReport.DB.Domain.Interfaces;
 using GenReport.Domain.Entities.Media;
-using GenReport.Domain.Entities.Business;
 using GenReport.Domain.Entities.Onboarding;
 using Microsoft.EntityFrameworkCore;
 using GenReport.Domain.EntityConfigurations;
@@ -31,13 +30,6 @@ namespace GenReport.Domain.DBContext
         #endregion Users
 
         #region Business
-        /// <summary>
-        /// Gets or sets the organizations.
-        /// </summary>
-        /// <value>
-        /// The organizations.
-        /// </value>
-        public DbSet<Organization> Organizations { get; set; }
         #endregion Business
 
         #region Media

@@ -20,15 +20,20 @@ using Serilog;
 using System.Text;
 
 // Create a new web application builder
-/// <summary>
-/// Initializes a new instance of the <see cref="$Program"/> class.
-/// </summary>
-var builder = WebApplication.CreateBuilder(args);
+// Configure Serilog early
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
 // Configuration setup
+var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var applicationConfiguration = new ApplicationConfiguration();
 configuration.GetSection("Configuration").Bind(applicationConfiguration);
+
+try
+{
+    Log.Information("Starting GenReport API...");
 
 // Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -92,8 +97,7 @@ builder.Services.AddAuthentication(options =>
         // Handle authentication failures
         OnAuthenticationFailed = err =>
         {
-            Console.WriteLine("ERROR validating app");
-            Console.WriteLine(err.Exception.Message);
+            Log.Error(err.Exception, "ERROR validating app: {Message}", err.Exception.Message);
             if (err.Exception.GetType() == typeof(SecurityTokenExpiredException))
             {
                 HttpResponseHelpers.SendTokenExpiredResponse(err.HttpContext);
@@ -109,6 +113,8 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+builder.Services.AddAuthorization();
 
 // Configure Swagger
 builder.Services.AddSwaggerGen(c =>
@@ -148,6 +154,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline
 app.UseAuthentication();
+app.UseAuthorization();
 app.UseFastEndpoints((config) =>
 {
     config.Endpoints.Configurator = (endpointconfigurator) => endpointconfigurator.Options(o => o.AddEndpointFilter<PerformanceInspector>().AddEndpointFilter<GlobalExceptionHandler>());
@@ -160,25 +167,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//delete if alread Exists
-if (applicationConfiguration.DeleteDB)
-{
-    Console.WriteLine("this will delete the DB are you sure you want to delete \n type yes to continue");
-    string? res = Console.ReadLine();
-    if (res != null && res.Equals("yes", StringComparison.CurrentCultureIgnoreCase))
-    {
-        Console.WriteLine("deleting db ");
-        await DeleteDB(app);
-        Console.WriteLine("database deleted");
-    }
+bool shouldCreateDb = !args.Contains("--no-create-db");
+bool shouldRecreateDb = args.Contains("--create-db");
 
-}
-// Initialize and seed the database
-if (applicationConfiguration.CreateDB)
+if (shouldRecreateDb || applicationConfiguration.DeleteDB)
 {
-    Console.WriteLine("creating db ");
+    Log.Information("Deleting database...");
+    await DeleteDB(app);
+    Log.Information("Database deleted");
+}
+
+// Initialize and seed the database
+if (shouldCreateDb || shouldRecreateDb || applicationConfiguration.CreateDB)
+{
+    Log.Information("Creating database...");
     await CreateDB(app);
-    Console.WriteLine("created db ");
+    Log.Information("Database created");
 }
 
 
@@ -186,7 +190,16 @@ await SeedDB(app);
 
 
 // Run the application 
-await app.RunAsync();
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // add DB triggers to set created and updatedon values
 

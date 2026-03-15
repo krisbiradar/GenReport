@@ -1,4 +1,4 @@
-﻿using GenReport.Domain.Entities.Onboarding;
+using GenReport.Domain.Entities.Onboarding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,7 +16,6 @@ namespace GenReport.Domain.EntityConfigurations
         public void Configure(EntityTypeBuilder<User> builder)
         {
             builder.HasKey(x => x.Id);
-            builder.HasOne(x => x.Organization).WithMany(x => x.Users).HasForeignKey(x=>x.OrganizationId).OnDelete(DeleteBehavior.Cascade);
             builder.HasIndex(x => x.Email);
             builder.HasIndex(x => x.FirstName);
             builder.HasIndex(x => x.LastName);
