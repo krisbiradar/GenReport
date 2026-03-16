@@ -6,6 +6,7 @@ using GenReport.Helpers;
 using GenReport.Infrastructure.Configuration;
 using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Security;
+using GenReport.Infrastructure.SharedServices.Core.Databases;
 using GenReport.Middlewares;
 using GenReport.Services.Implementations;
 using GenReport.Services.Interfaces;
@@ -55,6 +56,7 @@ builder.Services.AddSingleton<IApplicationConfiguration>(applicationConfiguratio
 builder.Services.AddSingleton<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IApplicationSeeder, ApplicationDBContextSeeder>();
 builder.Services.AddSingleton<IJWTTokenService, JWTTokenService>();
+builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
 
 // add cors
 builder.Services.AddCors(options =>

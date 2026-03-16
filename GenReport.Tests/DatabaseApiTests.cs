@@ -87,7 +87,6 @@ namespace GenReport.Tests
             var request = new AddDatabaseRequest
             {
                 Name = "Test DB",
-                DatabaseAlias = "test-db-alias",
                 DatabaseType = "PostgreSQL",
                 Provider = DbProvider.NpgSql,
                 ConnectionString = "Host=localhost;Database=test",

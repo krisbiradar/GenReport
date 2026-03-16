@@ -12,35 +12,96 @@ namespace GenReport.DB.Domain.Seed
     {
         public async Task SeedModules()
         {
-            var dbConnectionsModule = await applicationDbContext.Modules.FirstOrDefaultAsync(m => m.Name == "Database Connections");
-
-            if (dbConnectionsModule == null)
+            const long adminRoleId = 2;
+            var now = DateTime.UtcNow;
+            var requestedModules = new List<Module>
             {
-                dbConnectionsModule = new Module
+                new Module
                 {
-                    Name = "Database Connections",
-                    Description = "Manage database connections",
-                    IconClass = "bi bi-database-add", // Uses a Bootstrap icon for the sidebar
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                await applicationDbContext.Modules.AddAsync(dbConnectionsModule);
-                await applicationDbContext.SaveChangesAsync();
-
-                // Get all users, and give them access. Or map to roles if a specific Role model is preferred. 
-                // For MVP: Map to all distinct role IDs found in the system
-                var roles = await applicationDbContext.Users.Select(u => u.RoleId).Distinct().ToListAsync();
-
-                foreach(var roleId in roles)
+                    Name = "Database Connection Management",
+                    Description = "Manage and configure database connections",
+                    IconClass = "bi bi-database-gear",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new Module
                 {
-                    await applicationDbContext.RoleModules.AddAsync(new RoleModuleMapping
-                    {
-                        RoleId = roleId,
-                        ModuleId = dbConnectionsModule.Id
-                    });
+                    Name = "User Management",
+                    Description = "Manage users, roles, and account access",
+                    IconClass = "bi bi-people",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new Module
+                {
+                    Name = "AI & LLM Configuration",
+                    Description = "Configure AI models, prompts, and integration settings",
+                    IconClass = "bi bi-cpu",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new Module
+                {
+                    Name = "Reports",
+                    Description = "View and manage generated reports",
+                    IconClass = "bi bi-file-earmark-bar-graph",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                }
+            };
+
+            var existingModules = await applicationDbContext.Modules.ToListAsync();
+            var modulesToMap = new List<Module>();
+            bool hasModuleChanges = false;
+
+            foreach (var requestedModule in requestedModules)
+            {
+                var existingModule = existingModules.FirstOrDefault(m => m.Name.Equals(requestedModule.Name, StringComparison.OrdinalIgnoreCase));
+                if (existingModule == null)
+                {
+                    await applicationDbContext.Modules.AddAsync(requestedModule);
+                    modulesToMap.Add(requestedModule);
+                    hasModuleChanges = true;
+                    continue;
                 }
 
+                existingModule.Description = requestedModule.Description;
+                existingModule.IconClass = requestedModule.IconClass;
+                existingModule.UpdatedAt = now;
+                modulesToMap.Add(existingModule);
+                hasModuleChanges = true;
+            }
+
+            if (hasModuleChanges)
+            {
+                await applicationDbContext.SaveChangesAsync();
+            }
+
+            var existingAdminMappings = await applicationDbContext.RoleModules
+                .Where(x => x.RoleId == adminRoleId)
+                .Select(x => x.ModuleId)
+                .ToListAsync();
+
+            var existingModuleIds = existingAdminMappings.ToHashSet();
+            bool hasRoleMappingChanges = false;
+
+            foreach (var module in modulesToMap)
+            {
+                if (existingModuleIds.Contains(module.Id))
+                {
+                    continue;
+                }
+
+                await applicationDbContext.RoleModules.AddAsync(new RoleModuleMapping
+                {
+                    RoleId = adminRoleId,
+                    ModuleId = module.Id
+                });
+                hasRoleMappingChanges = true;
+            }
+
+            if (hasRoleMappingChanges)
+            {
                 await applicationDbContext.SaveChangesAsync();
             }
         }

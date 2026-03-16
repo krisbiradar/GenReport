@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GenReport.DB", "..\GenRepor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GenReport.Tests", "..\GenReport.Tests\GenReport.Tests.csproj", "{AC0F5B2C-B8FA-4B8E-939A-C81A64CE47AC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grepo.QueryGenerator", "..\Grepo.QueryGenerator\Grepo.QueryGenerator.csproj", "{B57DF4BB-FD10-42C5-A49B-15F89BE57538}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grepo.Jobs", "..\Grepo.Jobs\Grepo.Jobs.csproj", "{1D01EA49-C47D-4D15-8171-80DA54BCE4A5}"
 EndProject
 Global
@@ -37,10 +35,6 @@ Global
 		{AC0F5B2C-B8FA-4B8E-939A-C81A64CE47AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC0F5B2C-B8FA-4B8E-939A-C81A64CE47AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC0F5B2C-B8FA-4B8E-939A-C81A64CE47AC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B57DF4BB-FD10-42C5-A49B-15F89BE57538}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B57DF4BB-FD10-42C5-A49B-15F89BE57538}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B57DF4BB-FD10-42C5-A49B-15F89BE57538}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B57DF4BB-FD10-42C5-A49B-15F89BE57538}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1D01EA49-C47D-4D15-8171-80DA54BCE4A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1D01EA49-C47D-4D15-8171-80DA54BCE4A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D01EA49-C47D-4D15-8171-80DA54BCE4A5}.Release|Any CPU.ActiveCfg = Release|Any CPU

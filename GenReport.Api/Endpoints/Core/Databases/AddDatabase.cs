@@ -31,7 +31,7 @@ namespace GenReport.Api.Endpoints.Core.Databases
             var newDatabase = new Database
             {
                 Name = req.Name,
-                DatabaseAlias = req.DatabaseAlias,
+                DatabaseAlias = req.Name,
                 Type = req.DatabaseType,
                 ConnectionString = req.ConnectionString ?? string.Empty,
                 ServerAddress = req.HostName ?? string.Empty,

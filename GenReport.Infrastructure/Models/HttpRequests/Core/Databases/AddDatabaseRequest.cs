@@ -9,9 +9,6 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Databases
         public required string Name { get; set; }
 
         [Required]
-        public required string DatabaseAlias { get; set; }
-
-        [Required]
         public required string DatabaseType { get; set; }
 
         [Required]

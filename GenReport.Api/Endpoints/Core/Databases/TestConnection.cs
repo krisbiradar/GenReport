@@ -5,10 +5,11 @@ using GenReport.Infrastructure.Models.Shared;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using GenReport.Infrastructure.Interfaces;
 
 namespace GenReport.Api.Endpoints.Core.Databases
 {
-    public class TestConnection(ApplicationDbContext context, ILogger<TestConnection> logger, ICurrentUserService currentUserService) : Endpoint<AddDatabaseRequest, HttpResponse<string>>
+    public class TestConnection(ApplicationDbContext context, ILogger<TestConnection> logger, ICurrentUserService currentUserService, ITestConnectionService testConnectionService) : Endpoint<AddDatabaseRequest, HttpResponse<string>>
     {
         public override void Configure()
         {
@@ -27,11 +28,16 @@ namespace GenReport.Api.Endpoints.Core.Databases
                 return;
             }
 
-            // Implement actual testing logic here depending on the DbProvider in a real scenario
-            // For now just simulate success
-            logger.LogInformation($"Testing connection to {req.HostName}:{req.Port} for database alias {req.DatabaseAlias}");
+            logger.LogInformation($"Testing connection to {req.HostName}:{req.Port} for connection name {req.Name}");
+            var connectionTestResult = await testConnectionService.TestConnectionAsync(req, ct);
+            if (!connectionTestResult.IsSuccess)
+            {
+                logger.LogError("Database connection test failed for {HostName}:{Port} - {Reason}", req.HostName, req.Port, connectionTestResult.Message);
+                await SendAsync(new HttpResponse<string>(HttpStatusCode.BadRequest, "Database connection test failed.", "ERR_CONNECTION_TEST_FAILED", [connectionTestResult.Message]), cancellation: ct);
+                return;
+            }
 
-            await SendAsync(new HttpResponse<string>("Success", "Database connection test successful.", HttpStatusCode.OK), cancellation: ct);
+            await SendAsync(new HttpResponse<string>("Success", connectionTestResult.Message, HttpStatusCode.OK), cancellation: ct);
         }
     }
 }

@@ -1,4 +1,0 @@
-@GenReport.QueryGenerator_HostAddress = http://localhost:5212
-
-GET {{GenReport.QueryGenerator_HostAddress}}/weatherforecast/
-Accept: application/json
