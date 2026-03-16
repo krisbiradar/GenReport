@@ -50,7 +50,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Databases
                 DbProvider.SqlClient => $"Server={request.HostName},{request.Port};Database={request.DatabaseName};User Id={request.UserName};Password={request.Password};Encrypt=False;TrustServerCertificate=True;",
                 DbProvider.MySqlConnector => $"Server={request.HostName};Port={request.Port};Database={request.DatabaseName};User Id={request.UserName};Password={request.Password};",
                 DbProvider.Oracle => $"Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={request.HostName})(PORT={request.Port}))(CONNECT_DATA=(SERVICE_NAME={request.DatabaseName})));User Id={request.UserName};Password={request.Password};",
-                DbProvider.SQLite => $"Data Source={request.DatabaseName}.db;",
+                DbProvider.MongoClient => string.Empty,
                 _ => throw new NotSupportedException($"Provider {request.Provider} is not supported.")
             };
         }
@@ -64,7 +64,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Databases
                     ?? CreateFactory("System.Data.SqlClient.SqlClientFactory, System.Data.SqlClient"),
                 DbProvider.MySqlConnector => CreateFactory("MySqlConnector.MySqlConnectorFactory, MySqlConnector"),
                 DbProvider.Oracle => CreateFactory("Oracle.ManagedDataAccess.Client.OracleClientFactory, Oracle.ManagedDataAccess"),
-                DbProvider.SQLite => CreateFactory("Microsoft.Data.Sqlite.SqliteFactory, Microsoft.Data.Sqlite"),
+               DbProvider.MongoClient => CreateFactory("MongoDB.Driver.MongoClientFactory, MongoDB.Driver.Core"),
                 _ => null
             };
         }

@@ -13,7 +13,6 @@ namespace GenReport.DB.Domain.Enums
         MySqlConnector = 3,
         /// <summary>Oracle provider for Oracle Database.</summary>
         Oracle = 4,
-        /// <summary>SQLite provider for SQLite.</summary>
-        SQLite = 5
+        MongoClient = 5,
     }
 }
