@@ -57,6 +57,8 @@ builder.Services.AddSingleton<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IApplicationSeeder, ApplicationDBContextSeeder>();
 builder.Services.AddSingleton<IJWTTokenService, JWTTokenService>();
 builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
+builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
 
 // add cors
 builder.Services.AddCors(options =>

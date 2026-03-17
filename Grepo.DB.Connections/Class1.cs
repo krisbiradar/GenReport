@@ -1,4 +1,0 @@
-﻿namespace GenReport.DB.Connections
-{
-    
-}
