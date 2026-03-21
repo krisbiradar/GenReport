@@ -171,10 +171,8 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("ai_connection_id");
 
-                    b.Property<string>("EndpointType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                    b.Property<int>("EndpointType")
+                        .HasColumnType("integer")
                         .HasColumnName("endpoint_type");
 
                     b.Property<string>("HttpMethod")
@@ -203,6 +201,72 @@ namespace GenReport.DB.Migrations
                     b.HasIndex("AiConnectionId");
 
                     b.ToTable("ai_model_endpoints");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("role");
+
+                    b.Property<long>("SessionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("session_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("chat_messages");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatSession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("chat_sessions");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.Database", b =>
@@ -303,6 +367,35 @@ namespace GenReport.DB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("databases");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.MessageReport", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("message_id");
+
+                    b.Property<long>("ReportId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("report_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("ReportId");
+
+                    b.ToTable("message_reports");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.Query", b =>
@@ -543,6 +636,47 @@ namespace GenReport.DB.Migrations
                     b.Navigation("AiConnection");
                 });
 
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatMessage", b =>
+                {
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.ChatSession", "Session")
+                        .WithMany("Messages")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatSession", b =>
+                {
+                    b.HasOne("GenReport.Domain.Entities.Onboarding.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.MessageReport", b =>
+                {
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.ChatMessage", "Message")
+                        .WithMany("Reports")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.Report", "Report")
+                        .WithMany()
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+
+                    b.Navigation("Report");
+                });
+
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.Query", b =>
                 {
                     b.HasOne("GenReport.Domain.Entities.Onboarding.User", "CreatedBy")
@@ -582,6 +716,16 @@ namespace GenReport.DB.Migrations
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConnection", b =>
                 {
                     b.Navigation("ModelEndpoints");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatMessage", b =>
+                {
+                    b.Navigation("Reports");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatSession", b =>
+                {
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }

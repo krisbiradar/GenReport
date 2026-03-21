@@ -1,0 +1,28 @@
+using CoreDdd.Domain;
+using GenReport.Domain.Entities.Onboarding;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace GenReport.DB.Domain.Entities.Core
+{
+    [Table("chat_sessions")]
+    public class ChatSession : Entity<long>, IAggregateRoot
+    {
+        [Column("user_id")]
+        public long UserId { get; set; }
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+        public User User { get; set; }
+#pragma warning restore CS8618
+
+        [Column("title")]
+        public string? Title { get; set; }
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
+    }
+}
