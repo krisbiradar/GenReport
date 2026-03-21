@@ -21,7 +21,11 @@ namespace GenReport.Middlewares
                 var (totalTime, requestCount) = data;
                 return (totalTime + stopWatch.ElapsedMilliseconds, requestCount + 1);
             });
-            if (context.HttpContext.Response.StatusCode == 200)
+            if (context.HttpContext.Response.StatusCode != 200)
+            {
+                return result;
+            }
+
             {
                 // Log the performance data for the route
                 var (averageTime, requestCount) = _routeStats[route!];
