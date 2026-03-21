@@ -8,6 +8,7 @@ using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Security;
 using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Infrastructure.SharedServices.Core.Databases;
+using GenReport.Infrastructure.SharedServices.Core.Ai;
 using GenReport.Middlewares;
 using GenReport.Services.Implementations;
 using GenReport.Services.Interfaces;
@@ -58,6 +59,8 @@ builder.Services.AddSingleton<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IApplicationSeeder, ApplicationDBContextSeeder>();
 builder.Services.AddSingleton<IJWTTokenService, JWTTokenService>();
 builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
+builder.Services.AddSingleton<IChatCompletionFactory, ChatCompletionFactory>();
+builder.Services.AddScoped<ITestAiConnectionService, TestAiConnectionService>();
 
 // Credential Encryption — factory pattern
 builder.Services.AddSingleton<ICredentialEncryptor>(new ApiKeyEncryptor(applicationConfiguration.EncryptionMasterKey));
