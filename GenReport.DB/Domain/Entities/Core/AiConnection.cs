@@ -13,7 +13,7 @@ namespace GenReport.DB.Domain.Entities.Core
     [Table("ai_connections")]
     public class AiConnection : Entity<long>, IAggregateRoot
     {
-        /// <summary>Provider name (e.g. OpenAI, Anthropic, Gemini, Ollama, Custom).</summary>
+        /// <summary>Provider name (e.g. OpenAI, Anthropic, Gemini, Ollama).</summary>
         [Column("provider")]
         [Required]
         [StringLength(100)]

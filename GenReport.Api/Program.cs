@@ -4,6 +4,7 @@ using GenReport.Domain.DBContext;
 using GenReport.Domain.Interfaces;
 using GenReport.Helpers;
 using GenReport.Infrastructure.Configuration;
+using GenReport.Infrastructure.InMemory;
 using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Security;
 using GenReport.Infrastructure.Security.Encryption;
@@ -64,6 +65,12 @@ builder.Services.AddSingleton<IJWTTokenService, JWTTokenService>();
 builder.Services.AddScoped<ITestConnectionService, TestConnectionService>();
 builder.Services.AddSingleton<IChatCompletionFactory, ChatCompletionFactory>();
 builder.Services.AddScoped<ITestAiConnectionService, TestAiConnectionService>();
+
+// In-memory AI store (models + default configs, seeded at startup)
+var inMemoryAiStore = new InMemoryAiStore();
+builder.Services.AddSingleton<IInMemoryAiStore>(inMemoryAiStore);
+builder.Services.AddSingleton(inMemoryAiStore);           // also inject concrete type for seeder
+builder.Services.AddSingleton<InMemoryAiSeeder>();
 
 // Credential Encryption — factory pattern
 builder.Services.AddSingleton<ICredentialEncryptor>(new ApiKeyEncryptor(applicationConfiguration.EncryptionMasterKey));
@@ -207,6 +214,7 @@ if (shouldCreateDb || shouldRecreateDb || applicationConfiguration.CreateDB)
 
 
 await SeedDB(app);
+await SeedInMemoryAiStore(app);
 
 
 // Run the application 
@@ -253,6 +261,16 @@ async Task SeedDB(WebApplication app)
     await seeder.RunScripts();
     if (applicationConfiguration.SeedDB)
         await seeder.Seed();
+}
+
+/// <summary>
+/// Seeds the in-memory AI store with provider models (from OpenRouter) and default configs.
+/// </summary>
+async Task SeedInMemoryAiStore(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<InMemoryAiSeeder>();
+    await seeder.SeedAsync();
 }
 
 /// <summary>
