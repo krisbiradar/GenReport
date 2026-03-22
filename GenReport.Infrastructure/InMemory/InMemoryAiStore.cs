@@ -14,9 +14,6 @@ namespace GenReport.Infrastructure.InMemory
         private readonly ConcurrentDictionary<AiProvider, List<ProviderModelInfo>> _models
             = new();
 
-        private readonly ConcurrentDictionary<AiProvider, ProviderDefaultConfig> _defaultConfigs
-            = new();
-
         // ── IInMemoryAiStore (read) ──────────────────────────────────────────────
 
         public IReadOnlyList<ProviderModelInfo> GetModelsForProvider(AiProvider provider)
@@ -27,15 +24,9 @@ namespace GenReport.Infrastructure.InMemory
         public IReadOnlyList<AiProvider> GetSupportedProviders()
             => [.. Enum.GetValues<AiProvider>()];
 
-        public ProviderDefaultConfig? GetDefaultConfig(AiProvider provider)
-            => _defaultConfigs.TryGetValue(provider, out var config) ? config : null;
-
         // ── Internal write methods (called only by InMemoryAiSeeder) ─────────────
 
         internal void SetModels(AiProvider provider, IEnumerable<ProviderModelInfo> models)
             => _models[provider] = [.. models];
-
-        internal void SetDefaultConfig(AiProvider provider, ProviderDefaultConfig config)
-            => _defaultConfigs[provider] = config;
     }
 }

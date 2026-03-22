@@ -15,7 +15,5 @@ namespace GenReport.Infrastructure.InMemory
         /// <summary>Returns all supported AI providers.</summary>
         IReadOnlyList<AiProvider> GetSupportedProviders();
 
-        /// <summary>Returns the default connection config for the given provider, or null if not seeded.</summary>
-        ProviderDefaultConfig? GetDefaultConfig(AiProvider provider);
     }
 }

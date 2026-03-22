@@ -20,47 +20,15 @@ namespace GenReport.Infrastructure.InMemory
     {
         private const string OpenRouterModelsUrl = "https://openrouter.ai/api/v1/models";
 
-        // ── Default configs ──────────────────────────────────────────────────────
-
-        private static readonly IReadOnlyDictionary<AiProvider, ProviderDefaultConfig> DefaultConfigs =
-            new Dictionary<AiProvider, ProviderDefaultConfig>
-            {
-                [AiProvider.OpenAI] = new(
-                    Provider: AiProvider.OpenAI,
-                    DefaultModel: "openai/gpt-4o-mini",
-                    ChatEndpointUrl: null),          // uses native OpenAI SDK
-
-                [AiProvider.Anthropic] = new(
-                    Provider: AiProvider.Anthropic,
-                    DefaultModel: "claude-3-haiku-20240307",
-                    ChatEndpointUrl: null),          // uses native Anthropic SDK
-
-                [AiProvider.Gemini] = new(
-                    Provider: AiProvider.Gemini,
-                    DefaultModel: "gemini-2.0-flash",
-                    ChatEndpointUrl: null),          // uses native Gemini SDK
-
-                [AiProvider.Ollama] = new(
-                    Provider: AiProvider.Ollama,
-                    DefaultModel: "llama3.2",
-                    ChatEndpointUrl: "http://localhost:11434/v1"),  // OpenAI-compatible local endpoint
-            };
-
         // ── Seed entry point ─────────────────────────────────────────────────────
 
         public async Task SeedAsync(CancellationToken ct = default)
         {
-            // 1. Seed default configs (always, no network needed)
-            foreach (var (provider, config) in DefaultConfigs)
-                store.SetDefaultConfig(provider, config);
-
-            logger.LogInformation("[InMemoryAiSeeder] Default configs seeded for {Count} providers", DefaultConfigs.Count);
-
-            // 2. Seed Ollama with empty model list (models are dynamic/local)
+            // 1. Seed Ollama with empty model list (models are dynamic/local)
             store.SetModels(AiProvider.Ollama, []);
             logger.LogInformation("[InMemoryAiSeeder] Ollama is local — model list left empty");
 
-            // 3. Fetch OpenRouter models for hosted providers
+            // 2. Fetch OpenRouter models for hosted providers
             await FetchAndSeedOpenRouterModelsAsync(ct);
         }
 
