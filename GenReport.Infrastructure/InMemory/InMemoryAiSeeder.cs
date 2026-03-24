@@ -70,7 +70,7 @@ namespace GenReport.Infrastructure.InMemory
 
                     var models = result.Data
                         .Where(m => m.Id.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
-                        .Select(m => new ProviderModelInfo(provider, m.Id, m.Name))
+                        .Select(m => new ProviderModelInfo(provider, m.Id[(prefix.Length + 1)..], m.Name))
                         .ToList();
 
                     store.SetModels(provider, models);
