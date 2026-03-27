@@ -12,7 +12,6 @@ namespace GenReport.DB.Domain.Seed
     /// Defines the <see cref="ApplicationDBContextSeeder" />
     /// </summary>
     /// <seealso cref="GenReport.Domain.Interfaces.IApplicationSeeder" />
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public partial class ApplicationDBContextSeeder(ApplicationDbContext applicationDbContext, ILogger logger) : IApplicationSeeder
     {
         /// <summary>
@@ -20,6 +19,10 @@ namespace GenReport.DB.Domain.Seed
         /// </summary>
         private readonly ApplicationDbContext applicationDbContext = applicationDbContext;
         private readonly ILogger logger = logger;
+
+        public Func<string, string>? PasswordEncryptor { get; set; }
+        public Func<string, string>? ConnectionStringEncryptor { get; set; }
+        public Func<string, string>? ApiKeyEncryptor { get; set; }
 
         /// <summary>
         /// The Seed
@@ -36,6 +39,8 @@ namespace GenReport.DB.Domain.Seed
         {
             await SeedModules();
             await SeedUsers();
+            await SeedDatabases();
+            await SeedAiConnections();
         }
 
         public async Task RunScripts()

@@ -261,6 +261,15 @@ async Task SeedDB(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<IApplicationSeeder>();
+    
+    if (seeder is ApplicationDBContextSeeder appSeeder)
+    {
+        var encryptorFactory = scope.ServiceProvider.GetRequiredService<GenReport.Infrastructure.Security.Encryption.ICredentialEncryptorFactory>();
+        appSeeder.PasswordEncryptor = val => encryptorFactory.GetEncryptor(GenReport.Infrastructure.Security.Encryption.CredentialType.Password).Encrypt(val);
+        appSeeder.ConnectionStringEncryptor = val => encryptorFactory.GetEncryptor(GenReport.Infrastructure.Security.Encryption.CredentialType.ConnectionString).Encrypt(val);
+        appSeeder.ApiKeyEncryptor = val => encryptorFactory.GetEncryptor(GenReport.Infrastructure.Security.Encryption.CredentialType.ApiKey).Encrypt(val);
+    }
+    
     await seeder.SeedMandatoryTables();
     await seeder.RunScripts();
     if (applicationConfiguration.SeedDB)
