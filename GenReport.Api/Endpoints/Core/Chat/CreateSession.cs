@@ -27,10 +27,16 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 return;
             }
 
+            // Resolve the default AI connection to pre-populate the session's provider
+            var defaultConnection = await context.AiConnections
+                .Where(a => a.IsDefault && a.IsActive)
+                .FirstOrDefaultAsync(ct);
+
             var session = new ChatSession
             {
                 UserId = userId.Value,
-                Title = req.Title ?? "New Chat"
+                Title = req.Title ?? "New Chat",
+                AiConnectionId = defaultConnection?.Id
             };
 
             context.ChatSessions.Add(session);

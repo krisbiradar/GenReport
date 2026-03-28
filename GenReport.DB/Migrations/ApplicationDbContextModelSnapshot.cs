@@ -207,6 +207,10 @@ namespace GenReport.DB.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<long?>("AiConnectionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ai_connection_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -225,6 +229,8 @@ namespace GenReport.DB.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AiConnectionId");
 
                     b.HasIndex("UserId");
 
@@ -737,11 +743,17 @@ namespace GenReport.DB.Migrations
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatSession", b =>
                 {
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.AiConnection", "AiConnection")
+                        .WithMany()
+                        .HasForeignKey("AiConnectionId");
+
                     b.HasOne("GenReport.Domain.Entities.Onboarding.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AiConnection");
 
                     b.Navigation("User");
                 });
