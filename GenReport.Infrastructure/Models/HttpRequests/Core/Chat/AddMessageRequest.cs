@@ -14,6 +14,13 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Chat
         public string? Content { get; set; } 
         public List<VercelAiMessagePart>? Parts { get; set; }
     }
+    public class PreUploadedAttachment
+    {
+        public string Url { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public long Size { get; set; }
+    }
 
     public class AddMessageRequest
     {
@@ -26,6 +33,6 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Chat
         public List<VercelAiMessage> Messages { get; set; } = new();
         public string Trigger { get; set; } = string.Empty;
 
-        public Microsoft.AspNetCore.Http.IFormFileCollection? Attachments { get; set; }
+        public List<PreUploadedAttachment> Attachments { get; set; } = new();
     }
 }

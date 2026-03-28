@@ -14,7 +14,6 @@ namespace GenReport.Api.Endpoints.Core.Chat
         public override void Configure()
         {
             Post("/chat/sessions/messages");
-            AllowFileUploads();
         }
 
         public override async Task HandleAsync(AddMessageRequest req, CancellationToken ct)
@@ -48,42 +47,25 @@ namespace GenReport.Api.Endpoints.Core.Chat
             var role = lastUserMessage.Role;
             var content = lastUserMessage.Content ?? lastUserMessage.Parts?.FirstOrDefault()?.Text ?? string.Empty;
 
-            var uploadedMediaFiles = new List<GenReport.Domain.Entities.Media.MediaFile>();
-
-            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "chat");
-            if (!Directory.Exists(uploadsPath))
-            {
-                Directory.CreateDirectory(uploadsPath);
-            }
-
-            foreach (var file in Files)
-            {
-                var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-                var filePath = Path.Combine(uploadsPath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream, ct);
-                }
-
-                var mediaUrl = $"/uploads/chat/{fileName}";
-                
-                var mediaFile = new GenReport.Domain.Entities.Media.MediaFile(
-                    storageUrl: mediaUrl,
-                    fileName: file.FileName,
-                    
-                    mimeType: file.ContentType,
-                    size: file.Length
-                );
-                
-                context.MediaFiles.Add(mediaFile);
-                uploadedMediaFiles.Add(mediaFile);
-            }
-
             if (ValidationFailed)
             {
                 await SendErrorsAsync(cancellation: ct);
                 return;
+            }
+
+            var uploadedMediaFiles = new List<GenReport.Domain.Entities.Media.MediaFile>();
+
+            foreach (var attachedFile in req.Attachments)
+            {
+                var mediaFile = new GenReport.Domain.Entities.Media.MediaFile(
+                    storageUrl: attachedFile.Url,
+                    fileName: attachedFile.FileName,
+                    mimeType: attachedFile.ContentType,
+                    size: attachedFile.Size
+                );
+                
+                context.MediaFiles.Add(mediaFile);
+                uploadedMediaFiles.Add(mediaFile);
             }
 
             var message = new ChatMessage

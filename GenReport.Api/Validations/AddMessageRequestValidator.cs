@@ -14,9 +14,8 @@ namespace GenReport.Api.Validations
                 .WithMessage("Messages list cannot be empty.");
 
             RuleFor(x => x.Attachments)
-                .Must(attachments => attachments == null || attachments.Count <= 2)
-                .WithMessage("You can only upload a maximum of 2 files.")
-                .When(x => x.Attachments != null);
+                .Must(attachments => attachments.Count <= 2)
+                .WithMessage("You can only upload a maximum of 2 files.");
 
             var allowedMimeTypes = new[] { 
                 "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -25,11 +24,10 @@ namespace GenReport.Api.Validations
             };
 
             RuleForEach(x => x.Attachments)
-                .Must(file => file.Length <= 1 * 1024 * 1024)
+                .Must(file => file.Size <= 1 * 1024 * 1024)
                 .WithMessage((req, file) => $"File {file.FileName} exceeds the maximum size of 1 MB.")
                 .Must(file => allowedMimeTypes.Contains(file.ContentType.ToLower()))
-                .WithMessage((req, file) => $"File type {file.ContentType} for {file.FileName} is not allowed.")
-                .When(x => x.Attachments != null);
+                .WithMessage((req, file) => $"File type {file.ContentType} for {file.FileName} is not allowed.");
         }
     }
 }
