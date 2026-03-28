@@ -9,6 +9,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GenReport.DB.Domain.Entities.Core
 {
+    [Table("queries")]
     public class Query : Entity<long>, IAggregateRoot
     {
         /// <summary>

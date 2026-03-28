@@ -11,6 +11,7 @@ namespace GenReport.DB.Domain.Entities.Core
         public long UserId { get; set; }
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+        [System.Text.Json.Serialization.JsonIgnore]
         public User User { get; set; }
 #pragma warning restore CS8618
 
@@ -21,6 +22,7 @@ namespace GenReport.DB.Domain.Entities.Core
         [Column("ai_connection_id")]
         public long? AiConnectionId { get; set; }
 
+        [System.Text.Json.Serialization.JsonIgnore]
         public AiConnection? AiConnection { get; set; }
 
         [Column("created_at")]
