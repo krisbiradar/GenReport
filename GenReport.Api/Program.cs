@@ -185,7 +185,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseFastEndpoints((config) =>
 {
-    config.Endpoints.Configurator = (endpointconfigurator) => endpointconfigurator.Options(o => o.AddEndpointFilter<PerformanceInspector>().AddEndpointFilter<GlobalExceptionHandler>());
+    config.Endpoints.Configurator = (endpointconfigurator) => endpointconfigurator.Options(o => o.AddEndpointFilter<PerformanceInspector>().AddEndpointFilter<GlobalExceptionHandler>().AddEndpointFilter<ModuleAuthorizationFilter>());
 });
 // Enable Swagger in development environment
 if (app.Environment.IsDevelopment())

@@ -1,4 +1,4 @@
-﻿using CoreDdd.Domain;
+using CoreDdd.Domain;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -30,6 +30,12 @@ namespace GenReport.DB.Domain.Entities.Business
         /// </summary>
         [Column("icon_class")] // Column name mapping
         public string IconClass { get; set; } = "Default Icon Class";
+
+        /// <summary>
+        /// The base URL path for the module.
+        /// </summary>
+        [Column("url_prefix")]
+        public string UrlPrefix { get; set; } = string.Empty;
 
         /// <summary>
         /// The date and time the module was created.

@@ -21,6 +21,7 @@ namespace GenReport.DB.Domain.Seed
                     Name = "Database Connection Management",
                     Description = "Manage and configure database connections",
                     IconClass = "bi bi-database-gear",
+                    UrlPrefix = "/connections",
                     CreatedAt = now,
                     UpdatedAt = now
                 },
@@ -29,6 +30,7 @@ namespace GenReport.DB.Domain.Seed
                     Name = "User Management",
                     Description = "Manage users, roles, and account access",
                     IconClass = "bi bi-people",
+                    UrlPrefix = "/users",
                     CreatedAt = now,
                     UpdatedAt = now
                 },
@@ -37,6 +39,7 @@ namespace GenReport.DB.Domain.Seed
                     Name = "AI & LLM Configuration",
                     Description = "Configure AI models, prompts, and integration settings",
                     IconClass = "bi bi-cpu",
+                    UrlPrefix = "/ai",
                     CreatedAt = now,
                     UpdatedAt = now
                 },
@@ -45,6 +48,16 @@ namespace GenReport.DB.Domain.Seed
                     Name = "Reports",
                     Description = "View and manage generated reports",
                     IconClass = "bi bi-file-earmark-bar-graph",
+                    UrlPrefix = "/dashboard/reports",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new Module
+                {
+                    Name = "Chat",
+                    Description = "Chat with models and manage sessions",
+                    IconClass = "bi bi-chat-dots",
+                    UrlPrefix = "/chat",
                     CreatedAt = now,
                     UpdatedAt = now
                 }
@@ -67,6 +80,7 @@ namespace GenReport.DB.Domain.Seed
 
                 existingModule.Description = requestedModule.Description;
                 existingModule.IconClass = requestedModule.IconClass;
+                existingModule.UrlPrefix = requestedModule.UrlPrefix;
                 existingModule.UpdatedAt = now;
                 modulesToMap.Add(existingModule);
                 hasModuleChanges = true;

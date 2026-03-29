@@ -55,6 +55,11 @@ namespace GenReport.DB.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("UrlPrefix")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("url_prefix");
+
                     b.HasKey("Id");
 
                     b.ToTable("modules");
@@ -449,7 +454,7 @@ namespace GenReport.DB.Migrations
 
                     b.HasIndex("DatabaseId");
 
-                    b.ToTable("Queries");
+                    b.ToTable("queries");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.Report", b =>
