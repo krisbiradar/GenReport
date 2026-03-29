@@ -5,18 +5,20 @@ using GenReport.Infrastructure.Interfaces;
 using GenReport.Infrastructure.Models.AI;
 using GenReport.Infrastructure.Models.HttpRequests.Core.Chat;
 using GenReport.Infrastructure.Models.Shared;
+using GenReport.Infrastructure.Models.Shared;
 using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Runtime.CompilerServices; // Required for EnumeratorCancellation
 
 namespace GenReport.Api.Endpoints.Core.Chat
 {
     public class AddMessage(
-        ApplicationDbContext context, 
+        ApplicationDbContext context,
         ICurrentUserService currentUserService,
         IIntentClassifierService intentClassifierService,
-        ICredentialEncryptorFactory encryptorFactory) : Endpoint<AddMessageRequest, HttpResponse<ChatMessage>>
+        ICredentialEncryptorFactory encryptorFactory) : Endpoint<AddMessageRequest>
     {
         public override void Configure()
         {
@@ -28,7 +30,9 @@ namespace GenReport.Api.Endpoints.Core.Chat
             // The Next.js AI SDK frontend should pass the actual database session ID
             if (!long.TryParse(req.SessionId, out var sessionId))
             {
-                await SendAsync(new HttpResponse<ChatMessage>(HttpStatusCode.BadRequest, "Missing or invalid session ID.", "ERR_BAD_REQUEST", []), cancellation: ct);
+                await SendAsync(
+                    new HttpResponse<ChatMessage>(HttpStatusCode.BadRequest, "Missing or invalid session ID.",
+                        "ERR_BAD_REQUEST", []), cancellation: ct);
                 return;
             }
 
@@ -40,7 +44,9 @@ namespace GenReport.Api.Endpoints.Core.Chat
 
             if (session == null)
             {
-                await SendAsync(new HttpResponse<ChatMessage>(HttpStatusCode.NotFound, "Chat session not found or access denied.", "ERR_NOT_FOUND", []), cancellation: ct);
+                await SendAsync(
+                    new HttpResponse<ChatMessage>(HttpStatusCode.NotFound, "Chat session not found or access denied.",
+                        "ERR_NOT_FOUND", []), cancellation: ct);
                 return;
             }
 
@@ -48,7 +54,9 @@ namespace GenReport.Api.Endpoints.Core.Chat
             var lastUserMessage = req.Messages.LastOrDefault(m => m.Role == "user");
             if (lastUserMessage == null)
             {
-                await SendAsync(new HttpResponse<ChatMessage>(HttpStatusCode.BadRequest, "No user message found to process.", "ERR_BAD_REQUEST", []), cancellation: ct);
+                await SendAsync(
+                    new HttpResponse<ChatMessage>(HttpStatusCode.BadRequest, "No user message found to process.",
+                        "ERR_BAD_REQUEST", []), cancellation: ct);
                 return;
             }
 
@@ -64,12 +72,12 @@ namespace GenReport.Api.Endpoints.Core.Chat
             // Intent Classification
             string? classifiedIntentName = null;
             ChatIntent? intentEnum = null;
-            
+
             if (session.AiConnection != null)
             {
                 var apiKeyEncryptor = encryptorFactory.GetEncryptor(CredentialType.ApiKey);
                 var decryptedApiKey = apiKeyEncryptor.Decrypt(session.AiConnection.ApiKey);
-                
+
                 var classificationResult = await intentClassifierService.ClassifyAsync(
                     content,
                     session.AiConnection.Provider,
@@ -91,7 +99,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
                     mimeType: attachedFile.ContentType,
                     size: attachedFile.Size
                 );
-                
+
                 context.MediaFiles.Add(mediaFile);
                 uploadedMediaFiles.Add(mediaFile);
             }
@@ -116,34 +124,69 @@ namespace GenReport.Api.Endpoints.Core.Chat
             }
 
             context.ChatMessages.Add(message);
-            session.UpdatedAt = DateTime.UtcNow; // Touch session
+            session.UpdatedAt = DateTime.UtcNow;
 
-            // Handle OutOfScope / Sensitive immediately instead of calling main LLM
+
+            string assistantContent;
             if (intentEnum == ChatIntent.OutOfScope || intentEnum == ChatIntent.Sensitive)
             {
-                var assistantMessage = new ChatMessage
-                {
-                    SessionId = sessionId,
-                    Role = "assistant",
-                    Content = intentEnum == ChatIntent.Sensitive 
-                        ? "I cannot process requests involving sensitive information, passwords, credentials, or personal data."
-                        : "I'm sorry, I can only help with database queries, report generation, or general questions about my capabilities.",
-                    Attachments = new List<MessageAttachment>()
-                };
-                
-                context.ChatMessages.Add(assistantMessage);
-                await context.SaveChangesAsync(ct);
-                
-                // Return the assistant response immediately
-                await SendAsync(new HttpResponse<ChatMessage>(assistantMessage, "Processed out of scope request", HttpStatusCode.OK), cancellation: ct);
-                return;
+                assistantContent = intentEnum == ChatIntent.Sensitive
+                    ? "I cannot process requests involving sensitive information, passwords, credentials, or personal data."
+                    : "I'm sorry, I can only help with database queries, report generation, or general questions about my capabilities.";
+            }
+            else
+            {
+                assistantContent = "hey how're you doing";
             }
 
-            await context.SaveChangesAsync(ct);
+            var words = assistantContent.Split(' ');
+            var actualStreamedContent = new System.Text.StringBuilder();
 
-            // In typical cases, if not OutOfScope/Sensitive, the UI expects just the user message echoed back 
-            // or the backend streams the response. Since this flow returns OK with the user message, we stick to existing behavior
-            await SendAsync(new HttpResponse<ChatMessage>(message, "Message added successfully", HttpStatusCode.OK), cancellation: ct);
+            HttpContext.Response.StatusCode = 200;
+            HttpContext.Response.Headers.CacheControl = "no-cache";
+            HttpContext.Response.Headers.Connection = "keep-alive";
+            HttpContext.Response.ContentType = "text/x-vercel-ai-data-stream; charset=utf-8";
+            await HttpContext.Response.StartAsync(CancellationToken.None);
+
+            try
+            {
+                for (int i = 0; i < words.Length; i++)
+                {
+                    if (ct.IsCancellationRequested) break; // check manually instead
+
+                    await Task.Delay(200, CancellationToken.None); // ← don't pass ct here
+
+                    var chunk = words[i] + (i < words.Length - 1 ? " " : "");
+                    actualStreamedContent.Append(chunk);
+
+                    var serializedChunk = System.Text.Json.JsonSerializer.Serialize(chunk);
+                    await HttpContext.Response.WriteAsync($"0:{serializedChunk}\n", CancellationToken.None);
+                    await HttpContext.Response.Body.FlushAsync(CancellationToken.None);
+                }
+
+                // ← Send finish signal so the SDK knows the stream is done
+                await HttpContext.Response.WriteAsync(
+                    "d:{\"finishReason\":\"stop\",\"usage\":{\"promptTokens\":0,\"completionTokens\":0}}\n",
+                    CancellationToken.None);
+                await HttpContext.Response.Body.FlushAsync(CancellationToken.None);
+            }
+            catch (Exception ex) when (ex is OperationCanceledException || ex is IOException)
+            {
+                // Client disconnected — save what we have
+            }
+
+            // Save the assistant message to the DB with whatever was streamed so far
+            var assistantMessage = new ChatMessage
+            {
+                SessionId = sessionId,
+                Role = "assistant",
+                Content = actualStreamedContent.ToString().TrimEnd(),
+                Attachments = new List<MessageAttachment>()
+            };
+
+            context.ChatMessages.Add(assistantMessage);
+            // Use CancellationToken.None to ensure it saves even if the request was cancelled
+            await context.SaveChangesAsync(CancellationToken.None);
         }
     }
 }
