@@ -96,6 +96,65 @@ namespace GenReport.DB.Migrations
                     b.ToTable("rolemodulemappings");
                 });
 
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConfig", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AiConnectionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ai_connection_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("ModelId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("model_id");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("value");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AiConnectionId");
+
+                    b.HasIndex("Type");
+
+                    b.HasIndex("Type", "AiConnectionId", "IsActive")
+                        .IsUnique()
+                        .HasFilter("\"is_active\" = true AND \"model_id\" IS NULL");
+
+                    b.HasIndex("Type", "AiConnectionId", "ModelId", "IsActive")
+                        .IsUnique()
+                        .HasFilter("\"is_active\" = true AND \"model_id\" IS NOT NULL");
+
+                    b.ToTable("ai_configs");
+                });
+
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConnection", b =>
                 {
                     b.Property<long>("Id")
@@ -186,6 +245,11 @@ namespace GenReport.DB.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("Intent")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("intent");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -733,6 +797,17 @@ namespace GenReport.DB.Migrations
                         .IsRequired();
 
                     b.Navigation("Module");
+                });
+
+            modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.AiConfig", b =>
+                {
+                    b.HasOne("GenReport.DB.Domain.Entities.Core.AiConnection", "AiConnection")
+                        .WithMany()
+                        .HasForeignKey("AiConnectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AiConnection");
                 });
 
             modelBuilder.Entity("GenReport.DB.Domain.Entities.Core.ChatMessage", b =>

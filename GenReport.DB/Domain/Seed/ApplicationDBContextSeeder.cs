@@ -41,6 +41,7 @@ namespace GenReport.DB.Domain.Seed
             await SeedUsers();
             await SeedDatabases();
             await SeedAiConnections();
+            await SeedAiConfigs();
         }
 
         public async Task RunScripts()

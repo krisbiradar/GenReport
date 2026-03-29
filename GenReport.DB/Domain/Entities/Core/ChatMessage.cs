@@ -1,4 +1,5 @@
 using CoreDdd.Domain;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GenReport.DB.Domain.Entities.Core
@@ -6,6 +7,11 @@ namespace GenReport.DB.Domain.Entities.Core
     [Table("chat_messages")]
     public class ChatMessage : Entity<long>, IAggregateRoot
     {
+        /// <summary>Classified intent of the message (set only for user messages). Null for assistant messages.</summary>
+        [Column("intent")]
+        [StringLength(50)]
+        public string? Intent { get; set; }
+
         [Column("session_id")]
         public long SessionId { get; set; }
 

@@ -71,6 +71,8 @@ namespace GenReport.Domain.DBContext
         public DbSet<SchemaObject> SchemaObjects { get; set; }
         /// <summary>Database routines like SPs and functions along with embeddings.</summary>
         public DbSet<RoutineObject> RoutineObjects { get; set; }
+        /// <summary>Versioned AI configurations (system prompts, instructions, etc.).</summary>
+        public DbSet<AiConfig> AiConfigs { get; set; }
         #endregion
 
         /// <summary>
