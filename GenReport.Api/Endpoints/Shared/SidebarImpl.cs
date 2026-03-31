@@ -33,7 +33,8 @@ namespace GenReport.Endpoints.Shared
                 Description = r.Module.Description,
                 IconClass = r.Module.IconClass,
                 Id = r.Module.Id.ToString(),
-                Title = r.Module.Name
+                Title = r.Module.Name,
+                UrlPrefix = r.Module.UrlPrefix
             }).ToListAsync(ct);
             await SendAsync(new HttpResponse<List<SidebarImplResponse>>(navItems),200,ct);
 
