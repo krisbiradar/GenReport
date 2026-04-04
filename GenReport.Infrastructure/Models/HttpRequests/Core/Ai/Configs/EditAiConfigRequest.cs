@@ -4,6 +4,5 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Ai.Configs
     {
         public string? Value { get; set; }
         public bool? IsActive { get; set; }
-        public string? ModelId { get; set; }
     }
 }

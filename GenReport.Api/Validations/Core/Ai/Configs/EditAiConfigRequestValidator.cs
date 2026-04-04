@@ -9,7 +9,7 @@ namespace GenReport.Api.Validations.Core.Ai.Configs
         public EditAiConfigRequestValidator()
         {
             RuleFor(x => x)
-                .Must(x => x.Value != null || x.IsActive.HasValue || x.ModelId != null)
+                .Must(x => x.Value != null || x.IsActive.HasValue)
                 .WithMessage("At least one property must be provided to update.");
         }
     }

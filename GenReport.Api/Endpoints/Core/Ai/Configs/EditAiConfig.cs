@@ -30,7 +30,6 @@ namespace GenReport.Api.Endpoints.Core.Ai.Configs
 
             if (req.Value != null) config.Value = req.Value;
             if (req.IsActive.HasValue) config.IsActive = req.IsActive.Value;
-            if (req.ModelId != null) config.ModelId = req.ModelId;
 
             config.UpdatedAt = DateTime.UtcNow;
 
