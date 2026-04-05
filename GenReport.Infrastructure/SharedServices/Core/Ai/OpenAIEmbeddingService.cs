@@ -32,8 +32,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             // Resolve the active OpenAI connection's API key
             var aiConnection = await context.AiConnections
                 .AsNoTracking()
-                .Where(c => c.IsActive && c.IsDefault &&
-                            c.Provider.ToLower() == "openai")
+                            c.Provider.ToLowerInvariant() == "openai")
                 .FirstOrDefaultAsync(ct);
 
             if (aiConnection == null)
