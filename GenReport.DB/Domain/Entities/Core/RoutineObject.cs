@@ -54,10 +54,16 @@ namespace GenReport.DB.Domain.Entities.Core
         public string? FullSchema { get; set; }
 
         /// <summary>
-        /// Gets or sets the vector embedding of the routine object.
+        /// Gets or sets the OpenAI vector embedding (1536-dim) of the routine object.
         /// </summary>
         [Column("embedding", TypeName = "vector(1536)")]
         public Vector? Embedding { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Ollama vector embedding (768-dim) of the routine object.
+        /// </summary>
+        [Column("embedding_ollama", TypeName = "vector(768)")]
+        public Vector? EmbeddingOllama { get; set; }
 
         /// <summary>
         /// Gets or sets additional metadata in JSONB format.
