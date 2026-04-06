@@ -22,7 +22,7 @@ namespace GenReport.DB.Domain.Entities.Core
         /// <summary>
         /// Navigation property to the database.
         /// </summary>
-        [ForeignKey("database_id")]
+        [ForeignKey(nameof(DatabaseId))]
         public virtual Database Database { get; set; } = null!;
 
         /// <summary>
