@@ -12,6 +12,7 @@ namespace GenReport.DB.Domain.Common
         /// Overridden to serialize as a JSON string so the frontend always receives a
         /// consistent string type (e.g. "42" not 42). The DB still stores a long.
         /// </summary>
+        [Column("id")]
         [JsonNumberHandling(JsonNumberHandling.WriteAsString)]
         public new long Id => base.Id;
 
