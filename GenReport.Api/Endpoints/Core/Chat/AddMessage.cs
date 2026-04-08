@@ -22,6 +22,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
         ICredentialEncryptorFactory encryptorFactory,
         ITokenCountService tokenCountService,
         ISchemaSearchService schemaSearchService,
+        ISchemaRagInjectionService schemaRagInjectionService,
         IChatCompletionFactory chatCompletionFactory) : Endpoint<AddMessageRequest>
     {
         public override void Configure()
@@ -43,6 +44,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
 
             var session = await context.ChatSessions
                 .Include(s => s.AiConnection)
+                .Include(s => s.Database)
                 .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
 
             if (session == null)
@@ -177,8 +179,8 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 ?? DefaultAiPrompts.GetChatSystemPrompt(session.AiConnection.Provider);
 
             // ── Schema RAG: search relevant schema for this session ──────────────────
-            var schemaContext = new StringBuilder();
-            if (session.DatabaseId.HasValue && !string.IsNullOrWhiteSpace(content))
+            string dynamicSystemPrompt;
+            if (session.DatabaseId.HasValue && session.Database != null && !string.IsNullOrWhiteSpace(content))
             {
                 // Build the search query from entire conversation for better recall
                 var allUserMessages = await context.ChatMessages
@@ -198,18 +200,18 @@ namespace GenReport.Api.Endpoints.Core.Chat
                     session.AiConnection.DefaultModel,
                     ct);
 
-                if (relevantSchema.Count > 0)
-                {
-                    schemaContext.AppendLine("\n\n--- Relevant Database Schema ---");
-                    foreach (var obj in relevantSchema)
-                    {
-                        schemaContext.AppendLine($"\n-- {obj.Type.ToUpperInvariant()}: {obj.Name}");
-                        schemaContext.AppendLine(obj.FullSchema);
-                    }
-                }
-            }
+                var payload = schemaRagInjectionService.BuildPayload(
+                    session.Database.Provider.ToString(),
+                    session.Database.Name,
+                    relevantSchema);
 
-            var dynamicSystemPrompt = baseSystemPrompt + schemaContext.ToString();
+                dynamicSystemPrompt = schemaRagInjectionService.BuildSystemMessage(
+                    baseSystemPrompt, payload);
+            }
+            else
+            {
+                dynamicSystemPrompt = baseSystemPrompt;
+            }
 
             // ── Token count check ────────────────────────────────────────────────────
             var tokenCountResponse = await tokenCountService.GetSessionTokenCountAsync(sessionId, dynamicSystemPrompt, ct);

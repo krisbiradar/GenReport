@@ -110,7 +110,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
         /// <summary>
         /// Delegates to <see cref="OpenAIEmbeddingService"/> passing the session-scoped key/model.
         /// </summary>
-        private async Task<float[]?> TryOpenAiEmbeddingAsync(
+        private async Task<float[]?> TryOpenAiEmbeddingAsync(   
             string query, string apiKey, string model, CancellationToken ct)
         {
             if (openAiEmbeddingService is OpenAIEmbeddingService typedService)
