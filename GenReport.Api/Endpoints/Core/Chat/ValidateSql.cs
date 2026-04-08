@@ -77,7 +77,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 {
                     try
                     {
-                        jsonResult = JsonSerializer.Deserialize<object>(responseBody) ?? responseBody;
+                        jsonResult = JsonSerializer.Deserialize<JsonElement>(responseBody);
                     }
                     catch (JsonException ex)
                     {
