@@ -98,7 +98,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 logger.LogError(ex, "Error occurred while executing SQL via Go service.");
                 await SendAsync(new HttpResponse<object>(
                     HttpStatusCode.InternalServerError, 
-                    ex.Message, 
+                    "An unexpected error occurred.", 
                     "ERR_INTERNAL", 
                     []), cancellation: ct);
             }
