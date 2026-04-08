@@ -87,6 +87,7 @@ builder.Services.AddHttpClient<OllamaEmbeddingService>(client =>
 builder.Services.AddKeyedScoped<IEmbeddingService, OllamaEmbeddingService>("ollama");
 
 builder.Services.AddScoped<ISchemaSearchService, SchemaSearchService>();
+builder.Services.AddSingleton<ISchemaRagInjectionService, SchemaRagInjectionService>();
 
 // In-memory AI store (models + default configs, seeded at startup)
 var inMemoryAiStore = new InMemoryAiStore();
