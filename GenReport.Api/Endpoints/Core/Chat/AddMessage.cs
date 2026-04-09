@@ -182,6 +182,14 @@ namespace GenReport.Api.Endpoints.Core.Chat
             // Only inject schema context for intents that actually need it
             var shouldInjectSchema = intentEnum is ChatIntent.DatabaseQuery or ChatIntent.ReportGenerate;
 
+            Logger.LogInformation("--- RAG CONDITIONAL DEBUG ---");
+            Logger.LogInformation("intentEnum: {IntentEnum}", intentEnum?.ToString() ?? "null");
+            Logger.LogInformation("shouldInjectSchema: {ShouldInjectSchema}", shouldInjectSchema);
+            Logger.LogInformation("session.DatabaseId: {DatabaseId}", session.DatabaseId);
+            Logger.LogInformation("session.Database != null: {IsDbNull}", session.Database != null);
+            Logger.LogInformation("content is null/whitespace: {IsContentNull}", string.IsNullOrWhiteSpace(content));
+            Logger.LogInformation("-----------------------------");
+
             string dynamicSystemPrompt;
             if (shouldInjectSchema && session.DatabaseId.HasValue && session.Database != null && !string.IsNullOrWhiteSpace(content))
             {
@@ -242,7 +250,10 @@ namespace GenReport.Api.Endpoints.Core.Chat
 
             // Always inject the (possibly schema-augmented) system prompt in-memory
             if (!string.IsNullOrWhiteSpace(dynamicSystemPrompt))
+            {
+                Logger.LogInformation("--- SYSTEM PROMPT & RAG ---\n{SystemPrompt}", dynamicSystemPrompt);
                 chatHistory.AddSystemMessage(dynamicSystemPrompt);
+            }
 
             foreach (var dbMsg in dbMessages)
             {

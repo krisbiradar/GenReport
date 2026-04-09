@@ -12,7 +12,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
     /// and the <c>nomic-embed-text</c> model (or as configured via <see cref="OllamaOptions"/>).
     /// </summary>
     public sealed class OllamaEmbeddingService(
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         IOptions<OllamaOptions> options,
         ILogger<OllamaEmbeddingService> logger) : IEmbeddingService
     {
@@ -33,6 +33,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
 
             try
             {
+                var httpClient = httpClientFactory.CreateClient("Ollama");
                 var response = await httpClient.PostAsJsonAsync(
                     "/api/embeddings",
                     requestBody,

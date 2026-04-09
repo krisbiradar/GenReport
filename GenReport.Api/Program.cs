@@ -78,7 +78,7 @@ builder.Services.AddScoped<ITokenCountService, TokenCountService>();
 builder.Services.AddScoped<OpenAIEmbeddingService>();
 builder.Services.AddKeyedScoped<IEmbeddingService, OpenAIEmbeddingService>("openai");
 builder.Services.AddKeyedScoped<IEmbeddingService, OpenAIEmbeddingService>("custom"); // OpenAI-compatible
-builder.Services.AddHttpClient<OllamaEmbeddingService>(client =>
+builder.Services.AddHttpClient("Ollama", (sp, client) =>
 {
     var ollamaBaseUrl = builder.Configuration.GetSection(OllamaOptions.SectionName).GetValue<string>("BaseUrl") ?? "http://localhost:11434";
     client.BaseAddress = new Uri(ollamaBaseUrl);
