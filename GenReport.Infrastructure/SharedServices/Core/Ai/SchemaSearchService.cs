@@ -9,18 +9,36 @@ using Pgvector.EntityFrameworkCore;
 namespace GenReport.Infrastructure.SharedServices.Core.Ai
 {
     /// <summary>
-    /// Performs vector similarity search over <c>schema_objects</c> and <c>routine_objects</c>
-    /// for a given database, returning objects whose cosine distance to the query is ≤ 0.4.
-    /// Dispatches to the appropriate <see cref="IEmbeddingService"/> based on the session's provider.
+    /// Performs schema and routine object retrieval using <b>Multi-Query Expansion</b> (MQE)
+    /// combined with <b>Reciprocal Rank Fusion</b> (RRF) over pgvector cosine-distance searches.
+    /// <para>
+    /// Pipeline:
+    /// <list type="number">
+    ///   <item>The original query is expanded into N variants via <see cref="IQueryExpansionService"/>.</item>
+    ///   <item>Each variant is embedded and run in parallel against <c>schema_objects</c> and <c>routine_objects</c>.</item>
+    ///   <item>RRF merges all ranked result lists into one deduplicated ranking
+    ///         (score = Σ 1 / (60 + rank) across query lists).</item>
+    ///   <item>Top <see cref="MaxResults"/> objects by RRF score are returned.</item>
+    /// </list>
+    /// </para>
     /// </summary>
     public sealed class SchemaSearchService(
         ApplicationDbContext context,
+        IQueryExpansionService queryExpansionService,
         [FromKeyedServices("openai")] IEmbeddingService openAiEmbeddingService,
         [FromKeyedServices("ollama")] IEmbeddingService ollamaEmbeddingService,
         ILogger<SchemaSearchService> logger) : ISchemaSearchService
     {
-        private const float CosineDistanceThreshold = 0.4f;
+        // Slightly relaxed vs. the old 0.4 — RRF naturally demotes weak single-query matches.
+        private const float CosineDistanceThreshold = 0.45f;
 
+        // Standard RRF constant (k=60 recommended in the original Cormack et al. paper).
+        private const int RrfK = 60;
+
+        // Cap the final merged result to keep the injected schema token budget manageable.
+        private const int MaxResults = 10;
+
+        /// <inheritdoc />
         public async Task<IReadOnlyList<SchemaSearchResult>> SearchAsync(
             string query,
             long databaseId,
@@ -29,31 +47,110 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             string model,
             CancellationToken ct = default)
         {
-            // Resolve the right embedding service by provider name
             var normalised = provider.Trim().ToLowerInvariant();
 
-            float[]? embedding = normalised switch
+            // ── Step 1: Expand the query into multiple variants ───────────────────────
+            var queries = await queryExpansionService.ExpandAsync(query, provider, apiKey, model, ct);
+
+            // ── Step 2: Embed all variants in parallel ────────────────────────────────
+            var embeddingTasks = queries
+                .Select(q => EmbedQueryAsync(q, normalised, apiKey, model, ct))
+                .ToList();
+
+            var embeddings = await Task.WhenAll(embeddingTasks);
+
+            // Build (query, Vector) pairs — skip any that failed to embed
+            var validPairs = queries
+                .Zip(embeddings, (q, e) => (Query: q, Embedding: e))
+                .Where(pair => pair.Embedding != null)
+                .Select(pair => (pair.Query, Vector: new Vector(pair.Embedding!)))
+                .ToList();
+
+            if (validPairs.Count == 0)
+            {
+                logger.LogWarning(
+                    "No embeddings produced for any expanded query (provider='{Provider}'). Schema RAG skipped.",
+                    provider);
+                return [];
+            }
+
+            // ── Step 3: Run vector searches in parallel for each query variant ────────
+            var searchTasks = validPairs
+                .Select(pair => SearchForVectorAsync(pair.Vector, databaseId, normalised, ct))
+                .ToList();
+
+            var perQueryResults = await Task.WhenAll(searchTasks);
+
+            // ── Step 4: Reciprocal Rank Fusion ────────────────────────────────────────
+            // key = (Name, Type) as a unique identity for deduplication across lists
+            var rrfScores = new Dictionary<(string Name, string Type), double>();
+            var resultsByKey = new Dictionary<(string Name, string Type), SchemaSearchResult>();
+
+            foreach (var resultList in perQueryResults)
+            {
+                for (int rank = 0; rank < resultList.Count; rank++)
+                {
+                    var item = resultList[rank];
+                    var key = (item.Name, item.Type);
+
+                    var contribution = 1.0 / (RrfK + rank + 1); // 1-indexed rank
+                    rrfScores.TryAdd(key, 0.0);
+                    rrfScores[key] += contribution;
+
+                    resultsByKey.TryAdd(key, item); // first occurrence wins for FullSchema
+                }
+            }
+
+            var merged = rrfScores
+                .OrderByDescending(kv => kv.Value)
+                .Take(MaxResults)
+                .Select(kv => resultsByKey[kv.Key])
+                .ToList();
+
+            logger.LogInformation(
+                "Schema RAG (RRF): {Total} unique object(s) from {QueryCount} query variant(s) " +
+                "(database={DbId}, schema+routines per query: {PerQuery}, returned after cap: {Returned}).",
+                rrfScores.Count,
+                validPairs.Count,
+                databaseId,
+                string.Join(", ", perQueryResults.Select(r => r.Count)),
+                merged.Count);
+
+            return merged;
+        }
+
+        // ── Private helpers ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Generates an embedding for <paramref name="query"/> using the appropriate service.
+        /// </summary>
+        private async Task<float[]?> EmbedQueryAsync(
+            string query, string normalised, string apiKey, string model, CancellationToken ct)
+        {
+            return normalised switch
             {
                 "openai" or "custom" => await TryOpenAiEmbeddingAsync(query, apiKey, model, ct),
                 "ollama"             => await ollamaEmbeddingService.GenerateEmbeddingAsync(query, ct),
                 _ => null
             };
+        }
 
-            if (embedding == null)
-            {
-                logger.LogWarning(
-                    "No embedding produced for provider '{Provider}'. Schema RAG will be skipped.", provider);
-                return [];
-            }
-
-            var queryVector = new Vector(embedding);
-
+        /// <summary>
+        /// Runs a cosine-distance search for a single query vector against both
+        /// <c>schema_objects</c> and <c>routine_objects</c> and returns the concatenated
+        /// ordered results (schema first, then routines).
+        /// </summary>
+        private async Task<List<SchemaSearchResult>> SearchForVectorAsync(
+            Vector queryVector,
+            long databaseId,
+            string normalised,
+            CancellationToken ct)
+        {
             List<SchemaSearchResult> schemaResults;
             List<SchemaSearchResult> routineResults;
 
             if (normalised is "ollama")
             {
-                // Ollama: compare against the 768-dim embedding_ollama column
                 schemaResults = await context.SchemaObjects
                     .AsNoTracking()
                     .Where(s => s.DatabaseId == databaseId
@@ -76,7 +173,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
             }
             else
             {
-                // OpenAI / Custom: compare against the 1536-dim embedding column
+                // OpenAI / Custom: 1536-dim embedding column
                 schemaResults = await context.SchemaObjects
                     .AsNoTracking()
                     .Where(s => s.DatabaseId == databaseId
@@ -98,19 +195,13 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
                     .ToListAsync(ct);
             }
 
-            var combined = schemaResults.Concat(routineResults).ToList();
-
-            logger.LogInformation(
-                "Schema RAG: found {Count} relevant object(s) for database {DbId} (schema: {S}, routines: {R})",
-                combined.Count, databaseId, schemaResults.Count, routineResults.Count);
-
-            return combined;
+            return [.. schemaResults, .. routineResults];
         }
 
         /// <summary>
         /// Delegates to <see cref="OpenAIEmbeddingService"/> passing the session-scoped key/model.
         /// </summary>
-        private async Task<float[]?> TryOpenAiEmbeddingAsync(   
+        private async Task<float[]?> TryOpenAiEmbeddingAsync(
             string query, string apiKey, string model, CancellationToken ct)
         {
             if (openAiEmbeddingService is OpenAIEmbeddingService typedService)
