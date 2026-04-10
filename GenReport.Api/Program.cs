@@ -91,6 +91,7 @@ builder.Services.AddHttpClient("Ollama", (sp, client) =>
 });
 builder.Services.AddKeyedScoped<IEmbeddingService, OllamaEmbeddingService>("ollama");
 
+builder.Services.AddScoped<IQueryExpansionService, QueryExpansionService>();
 builder.Services.AddScoped<ISchemaSearchService, SchemaSearchService>();
 builder.Services.AddSingleton<ISchemaRagInjectionService, SchemaRagInjectionService>();
 builder.Services.AddScoped<ISqliteReportService, SqliteReportService>();
