@@ -49,9 +49,8 @@ namespace GenReport.Infrastructure.SharedServices.Core.Ai
         {
             var variants = await TryExpandWithRetryAsync(originalQuery, provider, apiKey, model, ct);
 
-            // Always prepend the original so it gets its own embedding + ranked result list.
             var all = new List<string>(variants.Count + 1) { originalQuery };
-            all.AddRange(variants);
+            all.AddRange(variants.Where(v => !string.Equals(v, originalQuery, StringComparison.OrdinalIgnoreCase)));
 
             logger.LogInformation(
                 "Query expansion produced {Count} variant(s) (original + {Extra}) for RAG search.",
