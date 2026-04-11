@@ -45,6 +45,7 @@ namespace GenReport.Tests
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), "API returns 200 OK but sets ErrorResponse");
             
             var content = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(content);
             Assert.IsTrue(content.Contains("Please check email") || content.Contains("ErrorResponse"), "Response should contain an error message");
         }
 
