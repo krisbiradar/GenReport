@@ -72,7 +72,10 @@ namespace GenReport.Api.Endpoints.Core.Ai.Configs
                 UpdatedAt = newConfig.UpdatedAt
             };
 
-            await SendAsync(new HttpResponse<AiConfigResponse>(response, "AI config added successfully.", HttpStatusCode.Created), cancellation: ct);
+            var isNewConfig = nextVersion == 1;
+            var statusCode = isNewConfig ? HttpStatusCode.Created : HttpStatusCode.OK;
+
+            await SendAsync(new HttpResponse<AiConfigResponse>(response, "AI config added successfully.", statusCode), (int)statusCode, cancellation: ct);
         }
     }
 }
