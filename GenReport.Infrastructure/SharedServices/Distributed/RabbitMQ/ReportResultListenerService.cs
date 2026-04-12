@@ -258,55 +258,7 @@ namespace GenReport.Infrastructure.SharedServices.Distributed.RabbitMQ
                 return;
             }
 
-            // 3a. Create Query row (permanent history of every executed query).
-            var query = new Query
-            {
-                Rawtext       = result.Query,
-                DatabaseId    = databaseId,
-                CreatedById   = session.UserId,
-                InvolvedColumns = [],
-                InvolvedTables  = [],
-                Comments        = [],
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-            };
-            db.Queries.Add(query);
-            await db.SaveChangesAsync(); // flush to get query.Id
-
-            // 3b. Create MediaFile row.
-            var mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var excelFileName = Path.GetFileNameWithoutExtension(sqliteFileName) + ".xlsx";
-            var mediaFile = new MediaFile(
-                storageUrl: delivery.R2Url,
-                fileName:   excelFileName,
-                mimeType:   mimeType,
-                size:       delivery.ExcelSizeBytes)
-            {
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-            };
-            db.MediaFiles.Add(mediaFile);
-            await db.SaveChangesAsync(); // flush to get mediaFile.Id
-
-            // 3c. Determine report name: session title + incremental suffix.
-            var reportName = await BuildReportNameAsync(db, sessionId, session.Title);
-
-            // 3d. Create Report row.
-            var report = new Report
-            {
-                Name          = reportName,
-                QueryId       = query.Id,
-                MediaFileId   = mediaFile.Id,
-                NoOfRows      = delivery.NoOfRows,
-                NoOfColumns   = delivery.NoOfColumns,
-                TimeInSeconds = 0,
-                CreatedAt     = DateTime.UtcNow,
-                UpdatedAt     = DateTime.UtcNow,
-            };
-            db.Reports.Add(report);
-            await db.SaveChangesAsync(); // flush to get report.Id
-
-            // 3e. Link to the most recent assistant message in the session.
+            // Fetch the last assistant message ID before the transaction (read-only, no need to be inside it).
             var lastMessageId = await db.ChatMessages
                 .AsNoTracking()
                 .Where(m => m.SessionId == sessionId && m.Role == "assistant")
@@ -314,28 +266,87 @@ namespace GenReport.Infrastructure.SharedServices.Distributed.RabbitMQ
                 .Select(m => (long?)m.Id)
                 .FirstOrDefaultAsync();
 
-            if (lastMessageId.HasValue)
-            {
-                db.MessageReports.Add(new MessageReport
-                {
-                    MessageId = lastMessageId.Value,
-                    ReportId  = report.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                });
-                await db.SaveChangesAsync();
-            }
-            else
+            if (!lastMessageId.HasValue)
             {
                 _logger.LogWarning(
-                    "[ReportResultListener] No assistant message found in session {Id} — MessageReport not created.",
+                    "[ReportResultListener] No assistant message found in session {Id} — MessageReport will not be created.",
                     sessionId);
             }
+
+            // Determine report name before the transaction (also read-only).
+            var reportName = await BuildReportNameAsync(db, sessionId, session.Title);
+
+            // Build all entities first so we can add them in a single SaveChangesAsync.
+            // EF Core resolves FKs via navigation/shadow properties when entities are
+            // added to the same context before saving — no intermediate flushes needed.
+            var mimeType      = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            var excelFileName = Path.GetFileNameWithoutExtension(sqliteFileName) + ".xlsx";
+            var now           = DateTime.UtcNow;
+
+            var query = new Query
+            {
+                Rawtext         = result.Query,
+                DatabaseId      = databaseId,
+                CreatedById     = session.UserId,
+                InvolvedColumns = [],
+                InvolvedTables  = [],
+                Comments        = [],
+                CreatedAt       = now,
+                UpdatedAt       = now,
+            };
+
+            var mediaFile = new MediaFile(
+                storageUrl: delivery.R2Url,
+                fileName:   excelFileName,
+                mimeType:   mimeType,
+                size:       delivery.ExcelSizeBytes)
+            {
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+
+            var report = new Report
+            {
+                Name          = reportName,
+                Query         = query,      // navigation property — EF resolves QueryId automatically
+                MediaFile     = mediaFile,  // navigation property — EF resolves MediaFileId automatically
+                NoOfRows      = delivery.NoOfRows,
+                NoOfColumns   = delivery.NoOfColumns,
+                TimeInSeconds = 0,
+                CreatedAt     = now,
+                UpdatedAt     = now,
+            };
+
+            // Wrap all writes in a single transaction via the provider's execution strategy
+            // (handles transient failures / Npgsql retry policy automatically).
+            await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                await using var tx = await db.Database.BeginTransactionAsync();
+
+                db.Queries.Add(query);
+                db.MediaFiles.Add(mediaFile);
+                db.Reports.Add(report);
+
+                if (lastMessageId.HasValue)
+                {
+                    db.MessageReports.Add(new MessageReport
+                    {
+                        MessageId = lastMessageId.Value,
+                        Report    = report,   // EF resolves ReportId automatically
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                    });
+                }
+
+                await db.SaveChangesAsync(); // single flush — all or nothing
+                await tx.CommitAsync();
+            });
 
             _logger.LogInformation(
                 "[ReportResultListener] Persisted: Query={QId} MediaFile={MId} Report={RId} Name={Name}",
                 query.Id, mediaFile.Id, report.Id, reportName);
         }
+
 
         // ── Report naming ─────────────────────────────────────────────────────
 
