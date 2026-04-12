@@ -1,4 +1,4 @@
-﻿namespace GenReport.Infrastructure.Static.Constants
+namespace GenReport.Infrastructure.Static.Constants
 {
     /// <summary>
     /// Defines the <see cref="ErrorMessages" />
@@ -31,5 +31,6 @@
         public static string INVALID_OTP => "INVALID_OTP";
         public static string OTP_EXPIRED => "OTP_EXPIRED";
         public static string PASSWORD_MISMATCH => "PASSWORD_MISMATCH";
+        public static string SESSION_PREREQUISITES_NOT_MET => "SESSION_PREREQUISITES_NOT_MET";
     }
 }

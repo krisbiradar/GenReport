@@ -3,6 +3,7 @@ using GenReport.DB.Domain.Entities.Core;
 using GenReport.Domain.DBContext;
 using GenReport.Infrastructure.Models.HttpRequests.Core.Chat;
 using GenReport.Infrastructure.Models.Shared;
+using GenReport.Infrastructure.Static.Constants;
 using GenReport.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -27,13 +28,34 @@ namespace GenReport.Api.Endpoints.Core.Chat
                 return;
             }
 
+            // Validate prerequisites: at least 1 active AI connection and 1 database must exist
+            var hasAiConnection = await context.AiConnections.AnyAsync(a => a.IsActive, ct);
+            var hasDatabase = await context.Databases.AnyAsync(ct);
+
+            if (!hasAiConnection || !hasDatabase)
+            {
+                var missing = new List<string>();
+
+                if (!hasAiConnection)
+                    missing.Add("No active AI configuration found. Please add at least one AI configuration before creating a session.");
+
+                if (!hasDatabase)
+                    missing.Add("No database found. Please add at least one database before creating a session.");
+
+                await SendAsync(
+                    new HttpResponse<ChatSession>(
+                        HttpStatusCode.UnprocessableEntity,
+                        "Cannot create session: required configuration is missing.",
+                        ErrorMessages.SESSION_PREREQUISITES_NOT_MET,
+                        missing),
+                    cancellation: ct);
+                return;
+            }
+
             // Resolve the default AI connection to pre-populate the session's provider
             var defaultConnection = await context.AiConnections
                 .Where(a => a.IsDefault && a.IsActive)
                 .FirstOrDefaultAsync(ct);
-
-            // Resolve database by alias if provided
-           
 
             var session = new ChatSession
             {
