@@ -5,7 +5,7 @@ namespace GenReport.Infrastructure.Models.Reports
     /// </summary>
     public sealed record ReportDeliveryResult(
         /// <summary>
-        /// Public R2 URL of the uploaded Excel file, or <c>null</c> when R2 is not
+        /// Public R2 URL of the uploaded file, or <c>null</c> when R2 is not
         /// configured (or the upload failed) and the file was attached to the email instead.
         /// </summary>
         string? R2Url,
@@ -16,7 +16,13 @@ namespace GenReport.Infrastructure.Models.Reports
         /// <summary>Number of columns returned by the query.</summary>
         int NoOfColumns,
 
-        /// <summary>Size of the generated Excel file in bytes.</summary>
-        long ExcelSizeBytes
+        /// <summary>Size of the generated file in bytes.</summary>
+        long FileSizeBytes,
+
+        /// <summary>Name of the primary file generated.</summary>
+        string FileName,
+
+        /// <summary>MIME type of the primary file generated.</summary>
+        string MimeType
     );
 }

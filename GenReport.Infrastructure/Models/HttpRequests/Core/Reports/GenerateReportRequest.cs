@@ -14,10 +14,10 @@ namespace GenReport.Infrastructure.Models.HttpRequests.Core.Reports
         public required string SessionId { get; set; }
 
         /// <summary>
-        /// Output format: e.g. "excel", "pdf", "csv"
+        /// Output format: e.g. "excel", "pdf", "csv", "both"
         /// </summary>
         [Required]
-        [AllowedValues("excel", "pdf", "csv", ErrorMessage = "Format must be one of: excel, pdf, csv")]
+        [AllowedValues("excel", "pdf", "csv", "both", ErrorMessage = "Format must be one of: excel, pdf, csv, both")]
         public required string Format { get; set; }
     }
 }

@@ -18,7 +18,7 @@ namespace GenReport.Infrastructure.Interfaces
         /// <param name="fileName">Original file name (used in the email subject).</param>
         /// <param name="userId">The ID of the requesting user — used to look up their email address.</param>
         /// <param name="ct">Cancellation token.</param>
-        Task ExportAndEmailAsync(byte[] fileData, string fileName, string userId, CancellationToken ct = default);
+        Task ExportAndEmailAsync(byte[] fileData, string fileName, string userId, string format = "both", CancellationToken ct = default);
 
         /// <summary>
         /// Processes the given SQLite file, generates Excel + PDF, and delivers them to the user.
@@ -38,6 +38,7 @@ namespace GenReport.Infrastructure.Interfaces
             byte[] fileData,
             string fileName,
             string userId,
+            string format,
             R2Configuration? r2Config = null,
             CancellationToken ct = default);
     }

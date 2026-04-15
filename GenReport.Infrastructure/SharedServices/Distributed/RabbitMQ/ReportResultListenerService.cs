@@ -223,7 +223,7 @@ namespace GenReport.Infrastructure.SharedServices.Distributed.RabbitMQ
             {
                 var reportService = scope.ServiceProvider.GetRequiredService<ISqliteReportService>();
                 delivery = await reportService.ExportAndDeliverAsync(
-                    fileBytes, fileName, session.UserId.ToString(), r2Config);
+                    fileBytes, fileName, session.UserId.ToString(), result.Format, r2Config);
             }
 
             _logger.LogInformation(
@@ -276,12 +276,7 @@ namespace GenReport.Infrastructure.SharedServices.Distributed.RabbitMQ
             // Determine report name before the transaction (also read-only).
             var reportName = await BuildReportNameAsync(db, sessionId, session.Title);
 
-            // Build all entities first so we can add them in a single SaveChangesAsync.
-            // EF Core resolves FKs via navigation/shadow properties when entities are
-            // added to the same context before saving — no intermediate flushes needed.
-            var mimeType      = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var excelFileName = Path.GetFileNameWithoutExtension(sqliteFileName) + ".xlsx";
-            var now           = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
 
             var query = new Query
             {
@@ -297,9 +292,9 @@ namespace GenReport.Infrastructure.SharedServices.Distributed.RabbitMQ
 
             var mediaFile = new MediaFile(
                 storageUrl: delivery.R2Url,
-                fileName:   excelFileName,
-                mimeType:   mimeType,
-                size:       delivery.ExcelSizeBytes)
+                fileName:   delivery.FileName,
+                mimeType:   delivery.MimeType,
+                size:       delivery.FileSizeBytes)
             {
                 CreatedAt = now,
                 UpdatedAt = now,

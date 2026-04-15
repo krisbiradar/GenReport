@@ -29,10 +29,11 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
             byte[] fileData,
             string fileName,
             string userId,
+            string format = "both",
             CancellationToken ct = default)
         {
             // Delegate to the new method with no R2 config → always attaches files.
-            await ExportAndDeliverAsync(fileData, fileName, userId, r2Config: null, ct);
+            await ExportAndDeliverAsync(fileData, fileName, userId, format, r2Config: null, ct);
         }
 
         // ── Public — conditional R2 / attachment delivery ─────────────────────
@@ -42,6 +43,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
             byte[] fileData,
             string fileName,
             string userId,
+            string format,
             R2Configuration? r2Config = null,
             CancellationToken ct = default)
         {
@@ -66,39 +68,57 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                 tables.Count, noOfRows, noOfColumns, fileName);
 
             // 3. Generate Excel and PDF in memory.
-            var excelBytes = BuildExcel(tables, fileName);
-            var pdfBytes   = BuildPdf(tables, fileName);
             var baseName   = Path.GetFileNameWithoutExtension(fileName);
 
+            bool wantExcel = string.Equals(format, "excel", StringComparison.OrdinalIgnoreCase) || string.Equals(format, "both", StringComparison.OrdinalIgnoreCase);
+            bool wantPdf = string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase) || string.Equals(format, "both", StringComparison.OrdinalIgnoreCase);
+
+            if (!wantExcel && !wantPdf)
+            {
+                wantExcel = true;
+                wantPdf = true; // Fallback to both
+            }
+
+            byte[]? excelBytes = wantExcel ? BuildExcel(tables, fileName) : null;
+            byte[]? pdfBytes   = wantPdf ? BuildPdf(tables, fileName) : null;
+
             // 4a. Try R2 upload if configured.
-            string? r2Url = null;
+            string? excelR2Url = null;
+            string? pdfR2Url = null;
+
             if (r2Config?.IsConfigured == true)
             {
-                r2Url = await TryUploadToR2Async(excelBytes, $"{baseName}.xlsx", r2Config, ct);
+                if (wantExcel && excelBytes != null)
+                {
+                    excelR2Url = await TryUploadToR2Async(excelBytes, $"{baseName}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", r2Config, ct);
+                }
+                if (wantPdf && pdfBytes != null)
+                {
+                    pdfR2Url = await TryUploadToR2Async(pdfBytes, $"{baseName}.pdf", "application/pdf", r2Config, ct);
+                }
             }
 
-            // 4b. Send email — link if R2 succeeded, attachments otherwise.
-            if (r2Url is not null)
-            {
-                await SendLinkEmailAsync(user.Email, user.FirstName, baseName, r2Url, ct);
-            }
-            else
-            {
-                await SendAttachmentEmailAsync(user.Email, user.FirstName, baseName, fileName, excelBytes, pdfBytes, ct);
-            }
+            // 4b. Send email — links if R2 succeeded, attachments otherwise.
+            await SendReportEmailAsync(user.Email, user.FirstName, baseName, wantExcel, wantPdf, excelR2Url, pdfR2Url, excelBytes, pdfBytes, ct);
 
             logger.LogInformation(
-                "Report delivered for user {UserId} via {Mode} (rows={Rows}, cols={Cols})",
-                userId, r2Url is not null ? "R2 link" : "email attachment", noOfRows, noOfColumns);
+                "Report delivered for user {UserId} via email (rows={Rows}, cols={Cols})",
+                userId, noOfRows, noOfColumns);
 
-            return new ReportDeliveryResult(r2Url, noOfRows, noOfColumns, excelBytes.LongLength);
+            string repFileName = wantExcel ? $"{baseName}.xlsx" : $"{baseName}.pdf";
+            string repMimeType = wantExcel ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf";
+            long repSizeBytes = wantExcel ? excelBytes!.LongLength : pdfBytes!.LongLength;
+            string? repR2Url = wantExcel ? excelR2Url : pdfR2Url;
+
+            return new ReportDeliveryResult(repR2Url, noOfRows, noOfColumns, repSizeBytes, repFileName, repMimeType);
         }
 
         // ── R2 Upload ─────────────────────────────────────────────────────────
 
         private async Task<string?> TryUploadToR2Async(
-            byte[] excelBytes,
+            byte[] fileBytes,
             string fileName,
+            string mimeType,
             R2Configuration r2Config,
             CancellationToken ct)
         {
@@ -108,96 +128,108 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                 var payload = new
                 {
                     fileName,
-                    content  = Convert.ToBase64String(excelBytes),
-                    mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    content  = Convert.ToBase64String(fileBytes),
+                    mimeType = mimeType
                 };
 
                 using var response = await client.PostAsJsonAsync("/storage/upload", payload, ct);
                 if (!response.IsSuccessStatusCode)
                 {
-                    logger.LogWarning("R2 upload failed with status {Status} — falling back to attachment.",
-                        response.StatusCode);
+                    logger.LogWarning("R2 upload failed with status {Status} for file {FileName} — falling back to attachment.",
+                        response.StatusCode, fileName);
                     return null;
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<UploadResponse>(cancellationToken: ct);
                 if (string.IsNullOrWhiteSpace(result?.Url))
                 {
-                    logger.LogWarning("R2 upload returned empty URL — falling back to attachment.");
+                    logger.LogWarning("R2 upload returned empty URL for file {FileName} — falling back to attachment.", fileName);
                     return null;
                 }
 
-                logger.LogInformation("R2 upload succeeded: {Url}", result.Url);
+                logger.LogInformation("R2 upload succeeded for {FileName}: {Url}", fileName, result.Url);
                 return result.Url;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "R2 upload threw an exception — falling back to attachment.");
+                logger.LogError(ex, "R2 upload threw an exception for file {FileName} — falling back to attachment.", fileName);
                 return null;
             }
         }
 
         // ── Email helpers ─────────────────────────────────────────────────────
 
-        private async Task SendLinkEmailAsync(
-            string email, string firstName, string baseName, string r2Url, CancellationToken ct)
+        private async Task SendReportEmailAsync(
+            string email, string firstName, string baseName, 
+            bool wantExcel, bool wantPdf, 
+            string? excelR2Url, string? pdfR2Url, 
+            byte[]? excelBytes, byte[]? pdfBytes, 
+            CancellationToken ct)
         {
-            var response = await fluentEmail
+            var emailService = fluentEmail
                 .To(email, firstName)
-                .Subject($"GenReport — {baseName} report ready")
-                .Body($"""
-                    <p>Hi {firstName},</p>
-                    <p>Your report for <strong>{baseName}</strong> is ready.</p>
-                    <p><a href="{r2Url}" style="background:#2D5BE3;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Download Excel Report</a></p>
-                    <p style="color:#888;font-size:12px;">Link expires after 7 days.</p>
-                    <p>— GenReport</p>
-                    """, isHtml: true)
-                .SendAsync(ct);
+                .Subject($"GenReport — {baseName} report");
 
-            if (!response.Successful)
+            var bodyHtml = $"<p>Hi {firstName},</p><p>Your report for <strong>{baseName}</strong> is ready.</p>";
+            
+            bool hasLinks = false;
+            if (wantExcel && excelR2Url != null)
             {
-                var errors = string.Join("; ", response.ErrorMessages);
-                logger.LogError("[Email] Failed to send link email to {Email}: {Errors}", email, errors);
-                throw new InvalidOperationException($"SMTP send failed: {errors}");
+                bodyHtml += $"<p><a href=\"{excelR2Url}\" style=\"background:#2D5BE3;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:10px;\">Download Excel Report</a></p>";
+                hasLinks = true;
+            }
+            if (wantPdf && pdfR2Url != null)
+            {
+                bodyHtml += $"<p><a href=\"{pdfR2Url}\" style=\"background:#E32D2D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:10px;\">Download PDF Report</a></p>";
+                hasLinks = true;
             }
 
-            logger.LogInformation("[Email] Link email sent successfully to {Email}", email);
-        }
+            if (hasLinks)
+            {
+                bodyHtml += "<p style=\"color:#888;font-size:12px;margin-top:20px;\">Link(s) expire after 7 days.</p>";
+            }
 
-        private async Task SendAttachmentEmailAsync(
-            string email, string firstName, string baseName, string fileName,
-            byte[] excelBytes, byte[] pdfBytes, CancellationToken ct)
-        {
-            var response = await fluentEmail
-                .To(email, firstName)
-                .Subject($"GenReport — {baseName} report")
-                .Body($"""
-                    <p>Hi {firstName},</p>
-                    <p>Your report for <strong>{fileName}</strong> is ready. Please find the Excel and PDF exports attached.</p>
-                    <p>— GenReport</p>
-                    """, isHtml: true)
-                .Attach(new FluentEmail.Core.Models.Attachment
+            bool hasAttachments = false;
+            if (wantExcel && excelR2Url == null && excelBytes != null)
+            {
+                emailService.Attach(new FluentEmail.Core.Models.Attachment
                 {
                     Filename    = $"{baseName}.xlsx",
                     Data        = new MemoryStream(excelBytes),
                     ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                })
-                .Attach(new FluentEmail.Core.Models.Attachment
+                });
+                hasAttachments = true;
+            }
+            if (wantPdf && pdfR2Url == null && pdfBytes != null)
+            {
+                emailService.Attach(new FluentEmail.Core.Models.Attachment
                 {
                     Filename    = $"{baseName}.pdf",
                     Data        = new MemoryStream(pdfBytes),
                     ContentType = "application/pdf"
-                })
-                .SendAsync(ct);
+                });
+                hasAttachments = true;
+            }
+
+            if (hasAttachments)
+            {
+                bodyHtml += "<p>Please find the requested report(s) attached.</p>";
+            }
+
+            bodyHtml += "<p style=\"margin-top:30px;\">— GenReport</p>";
+
+            emailService.Body(bodyHtml, isHtml: true);
+
+            var response = await emailService.SendAsync(ct);
 
             if (!response.Successful)
             {
                 var errors = string.Join("; ", response.ErrorMessages);
-                logger.LogError("[Email] Failed to send attachment email to {Email}: {Errors}", email, errors);
+                logger.LogError("[Email] Failed to send report email to {Email}: {Errors}", email, errors);
                 throw new InvalidOperationException($"SMTP send failed: {errors}");
             }
 
-            logger.LogInformation("[Email] Attachment email sent successfully to {Email}", email);
+            logger.LogInformation("[Email] Report email sent successfully to {Email}", email);
         }
 
         // ── SQLite Reading ────────────────────────────────────────────────────
