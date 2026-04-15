@@ -142,7 +142,7 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
         private async Task SendLinkEmailAsync(
             string email, string firstName, string baseName, string r2Url, CancellationToken ct)
         {
-            await fluentEmail
+            var response = await fluentEmail
                 .To(email, firstName)
                 .Subject($"GenReport — {baseName} report ready")
                 .Body($"""
@@ -153,13 +153,22 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                     <p>— GenReport</p>
                     """, isHtml: true)
                 .SendAsync(ct);
+
+            if (!response.Successful)
+            {
+                var errors = string.Join("; ", response.ErrorMessages);
+                logger.LogError("[Email] Failed to send link email to {Email}: {Errors}", email, errors);
+                throw new InvalidOperationException($"SMTP send failed: {errors}");
+            }
+
+            logger.LogInformation("[Email] Link email sent successfully to {Email}", email);
         }
 
         private async Task SendAttachmentEmailAsync(
             string email, string firstName, string baseName, string fileName,
             byte[] excelBytes, byte[] pdfBytes, CancellationToken ct)
         {
-            await fluentEmail
+            var response = await fluentEmail
                 .To(email, firstName)
                 .Subject($"GenReport — {baseName} report")
                 .Body($"""
@@ -180,6 +189,15 @@ namespace GenReport.Infrastructure.SharedServices.Core.Reports
                     ContentType = "application/pdf"
                 })
                 .SendAsync(ct);
+
+            if (!response.Successful)
+            {
+                var errors = string.Join("; ", response.ErrorMessages);
+                logger.LogError("[Email] Failed to send attachment email to {Email}: {Errors}", email, errors);
+                throw new InvalidOperationException($"SMTP send failed: {errors}");
+            }
+
+            logger.LogInformation("[Email] Attachment email sent successfully to {Email}", email);
         }
 
         // ── SQLite Reading ────────────────────────────────────────────────────

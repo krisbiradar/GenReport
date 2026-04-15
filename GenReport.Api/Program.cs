@@ -13,7 +13,8 @@ using GenReport.Infrastructure.Security.Encryption;
 using GenReport.Infrastructure.SharedServices.Core.Databases;
 using GenReport.Infrastructure.SharedServices.Core.Ai;
 using GenReport.Infrastructure.SharedServices.Core.Reports;
-using System.Net.Mail;
+using FluentEmail.MailKitSmtp;
+using MailKit.Security;
 using GenReport.Middlewares;
 using GenReport.Services.Implementations;
 using GenReport.Services.Interfaces;
@@ -120,18 +121,25 @@ builder.Services.AddScoped<ISqliteReportService, SqliteReportService>();
 // triggers Excel/PDF generation + email delivery for completed report jobs.
 builder.Services.AddHostedService<GenReport.Infrastructure.SharedServices.Distributed.RabbitMQ.ReportResultListenerService>();
 
-// FluentEmail with SMTP (Mailpit on localhost:1025 by default)
+// FluentEmail with MailKit — handles STARTTLS (port 587) and SSL (port 465) correctly.
+// Brevo SMTP relay requires STARTTLS on port 587; legacy SmtpClient cannot negotiate this reliably.
 var smtpOpts = builder.Configuration.GetSection(SmtpOptions.SectionName).Get<SmtpOptions>() ?? new SmtpOptions();
+var socketOptions = smtpOpts.Port == 465
+    ? SecureSocketOptions.SslOnConnect  // port 465 → implicit TLS
+    : SecureSocketOptions.StartTls;     // port 587 / 2525 → STARTTLS
 builder.Services
     .AddFluentEmail(smtpOpts.FromAddress, smtpOpts.FromName)
-    .AddSmtpSender(new SmtpClient(smtpOpts.Host, smtpOpts.Port)
+    .AddMailKitSender(new SmtpClientOptions
     {
-        EnableSsl            = smtpOpts.EnableSsl,
-        DeliveryMethod       = SmtpDeliveryMethod.Network,
-        UseDefaultCredentials = false,
-        Credentials          = string.IsNullOrWhiteSpace(smtpOpts.Username)
-            ? null
-            : new System.Net.NetworkCredential(smtpOpts.Username, smtpOpts.Password)
+        Server                = smtpOpts.Host,
+        
+        Port                  = smtpOpts.Port,
+        UseSsl                = smtpOpts.Port == 465,
+        RequiresAuthentication = !string.IsNullOrWhiteSpace(smtpOpts.Username),
+        User                  = smtpOpts.Username ?? string.Empty,
+        Password              = smtpOpts.Password ?? string.Empty,
+        SocketOptions         = socketOptions,
+        
     });
 
 // In-memory AI store (models + default configs, seeded at startup)
@@ -250,6 +258,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
 // configure logging
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
@@ -269,6 +278,19 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+if (app.Environment.IsDevelopment())
+{
+    System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, errors) =>
+    {
+        if (errors == System.Net.Security.SslPolicyErrors.None) return true;
+
+        // Allow only incomplete revocation check — reject everything else
+        return chain.ChainStatus.All(s =>
+            s.Status == System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.RevocationStatusUnknown ||
+            s.Status == System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.OfflineRevocation);
+    };
 }
 
 bool shouldCreateDb = args.Contains("--create-db") || applicationConfiguration.CreateDB;
