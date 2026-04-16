@@ -13,6 +13,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Text.Json;
 
 namespace GenReport.Api.Endpoints.Core.Chat
 {
@@ -25,7 +26,7 @@ namespace GenReport.Api.Endpoints.Core.Chat
         ISchemaSearchService schemaSearchService,
         ISchemaRagInjectionService schemaRagInjectionService,
         IChatCompletionFactory chatCompletionFactory,
-        ExecuteSql executeSql) : Endpoint<AddMessageRequest>
+        IHttpClientFactory httpClientFactory) : Endpoint<AddMessageRequest>
     {
         public override void Configure()
         {
@@ -324,6 +325,55 @@ namespace GenReport.Api.Endpoints.Core.Chat
                     {
                         var extractedQuery = match.Groups[1].Value.Trim();
                         
+                        try
+                        {
+                            // Build payload for Go
+                            var goPayload = new 
+                            { 
+                                databaseId = session.DatabaseId.Value.ToString(), 
+                                sql = extractedQuery,
+                                maxRowsToReturn = 5 // Number of lines to return for the preview
+                            };
+
+                            // Execute the HTTP request
+                            var client = httpClientFactory.CreateClient("GoService");
+                            using var response = await client.PostAsJsonAsync("/queries/run", goPayload, ct);
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                // Read and deserialize the JSON response
+                                var responseBody = await response.Content.ReadAsStringAsync(ct);
+                                var previewData = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(responseBody);
+
+                                if (previewData != null && previewData.Count > 0)
+                                {
+                                    // Format and stream
+                                    var markdownTable = BuildMarkdownTable(previewData);
+                                    var previewMessage = $"\n\n**Data Preview:**\n{markdownTable}";
+
+                                    actualStreamedContent.Append(previewMessage);
+
+                                    await WriteSseAsync(new
+                                    {
+                                        type = "text-delta",
+                                        id = textPartId,
+                                        delta = previewMessage
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                // Go service returned an error
+                                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                                var errorMessage = $"\n\n*Preview execution failed: {response.StatusCode}*\n`{errorBody}`";
+                                actualStreamedContent.Append(errorMessage);
+                                await WriteSseAsync(new { type = "text-delta", id = textPartId, delta = errorMessage });
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "Failed to execute preview query.");
+                        }
                     }
                 }
 
@@ -385,6 +435,34 @@ namespace GenReport.Api.Endpoints.Core.Chat
 
             await WriteSseAsync(new { type = "text-end", id = partId });
             await WriteSseAsync(new { type = "finish", finishReason = "stop" });
+        }
+
+        // Creates a Markdown table for the Query Preview
+        private string BuildMarkdownTable(List<Dictionary<string, JsonElement>> rows)
+        {
+            if (rows == null || rows.Count == 0) return "_No results returned._";
+
+            var sb = new StringBuilder();
+            var columns = rows[0].Keys.ToList();
+
+            sb.AppendLine("| " + string.Join(" | ", columns) + " |");
+            sb.AppendLine("|" + string.Join("|", columns.Select(_ => "---")) + "|");
+
+            foreach (var row in rows)
+            {
+                var values = columns.Select(col => 
+                {
+                    if (row.TryGetValue(col, out var val) && val.ValueKind != JsonValueKind.Null)
+                    {
+                        return val.ToString().Replace("\n", " ").Replace("|", "\\|");
+                    }
+                    return "NULL";
+                });
+                
+                sb.AppendLine("| " + string.Join(" | ", values) + " |");
+            }
+
+            return sb.ToString();
         }
     }
 }
