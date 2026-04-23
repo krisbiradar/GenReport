@@ -1,5 +1,5 @@
 # GenReport
-> AI + BI — one-click business intelligence, on your server.
+> AI + BI — one-click business intelligence, on your server, locally!.
 
 GenReport is a self-hosted, all-in-one business intelligence platform powered by AI. It bundles a **.NET Core** backend, a **React** frontend, and a **Go** service layer into a single binary — no Docker, no cloud subscriptions, no complex setup. Just download, run, and start turning your data into insights.
 
