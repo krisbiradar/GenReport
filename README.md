@@ -47,7 +47,7 @@ GenReport will start on **http://localhost:2905** by default.
 
 ### First login
 
-Open your browser and navigate to `http://localhost:2905`. An admin account is automatically created on first launch with the following default credentials:
+Open your browser and navigate to `http://localhost:2804`. An admin account is automatically created on first launch with the following default credentials:
 
 | Field | Default |
 |---|---|
