@@ -43,7 +43,11 @@ chmod +x genreport
 ./genreport
 ```
 
-GenReport will start on **http://localhost:2905** by default.
+GenReport will start on **http://localhost:2804
+
+https://github.com/user-attachments/assets/7e327492-d092-4d6e-8296-e1fd9c7b33d3
+
+** by default.
 
 ### First login
 
